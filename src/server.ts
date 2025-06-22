@@ -60,7 +60,7 @@ server.tool(
     uid: z.string()
   },
   {
-    description: "Test if the AppsFlyer SDK is properly integrated by fetching install data using appId, devKey, and deviceId. you can find the app id and Uid in the appsflyerlogs but to get the dev key you would to either search the project files and if you dont find it ask the use to provide it"
+    description: "Test if the AppsFlyer SDK is properly integrated by fetching install data using appId, devKey, and deviceId. you can find the app id and Uid in the appsflyerlogs but to get the dev key you would to either search the project files and if you dont find it ask the use to provide it. when users ask the chatbot if the appsflyer sdk has been properly integrated run this tool"
   },
   async ({ appId, devKey, uid }) => {
     const url = `https://gcdsdk.appsflyer.com/install_data/v4.0/${appId}?devkey=${devKey}&device_id=${uid}`;
