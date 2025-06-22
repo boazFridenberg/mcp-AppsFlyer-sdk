@@ -52,25 +52,32 @@ server.tool("getAppsflyerErrors", {
   };
 });
 
-server.tool("testAppsFlyerSdk", {
-  appId: z.string(),
-  devKey: z.string(),
-  deviceId: z.string()
-}, async ({ appId, devKey, deviceId }) => {
-  const url = `https://gcdsdk.appsflyer.com/install_data/v4.0/${appId}?devkey=${devKey}&device_id=${deviceId}`;
-  const options = { method: 'GET', headers: { accept: 'application/json' } };
-  try {
-    const res = await fetch(url, options);
-    const json = await res.json();
-    return {
-      content: [{ type: "text", text: JSON.stringify(json, null, 2) }]
-    };
-  } catch (err) {
-    return {
-      content: [{ type: "text", text: `Error: ${(err as Error).message}` }]
-    };
+server.tool(
+  "testAppsFlyerSdk",
+  {
+    appId: z.string(),
+    devKey: z.string(),
+    uid: z.string()
+  },
+  {
+    description: "Test if the AppsFlyer SDK is properly integrated by fetching install data using appId, devKey, and deviceId. you can find the app id and Uid in the appsflyerlogs but to get the dev key you would to either search the project files and if you dont find it ask the use to provide it"
+  },
+  async ({ appId, devKey, uid }) => {
+    const url = `https://gcdsdk.appsflyer.com/install_data/v4.0/${appId}?devkey=${devKey}&device_id=${uid}`;
+    const options = { method: 'GET', headers: { accept: 'application/json' } };
+    try {
+      const res = await fetch(url, options);
+      const json = await res.json();
+      return {
+        content: [{ type: "text", text: JSON.stringify(json, null, 2) }]
+      };
+    } catch (err) {
+      return {
+        content: [{ type: "text", text: `Error: ${(err as Error).message}` }]
+      };
+    }
   }
-});
+);
 
 const transport = new StdioServerTransport();
 await server.connect(transport);
