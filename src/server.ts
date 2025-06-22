@@ -9,34 +9,6 @@ const server = new McpServer({
   version: "1.0.0",
 });
 
-server.tool("startLogcatStream", {
-  filterTag: z.string().optional()
-}, async ({ filterTag }) => {
-  try {
-    startLogcatStream(filterTag);
-    return {
-      content: [{ type: "text", text: `Logcat started with filter: ${filterTag ?? "AppsFlyer_6.14.0"}` }]
-    };
-  } catch (err) {
-    return {
-      content: [{ type: "text", text: `Error: ${(err as Error).message}` }]
-    };
-  }
-});
-
-server.tool("stopLogcatStream", {}, async () => {
-  try {
-    stopLogcatStream();
-    return {
-      content: [{ type: "text", text: "Logcat stopped." }]
-    };
-  } catch (err) {
-    return {
-      content: [{ type: "text", text: `Error: ${(err as Error).message}` }]
-    };
-  }
-});
-
 server.tool("fetchAppsflyerLogs", {
   lineCount: z.number().default(100)
 }, async ({ lineCount }) => {
@@ -78,6 +50,26 @@ server.tool("getAppsflyerErrors", {
   return {
     content: [{ type: "text", text: JSON.stringify(errors, null, 2) }]
   };
+});
+
+server.tool("testAppsFlyerSdk", {
+  appId: z.string(),
+  devKey: z.string(),
+  deviceId: z.string()
+}, async ({ appId, devKey, deviceId }) => {
+  const url = `https://gcdsdk.appsflyer.com/install_data/v4.0/${appId}?devkey=${devKey}&device_id=${deviceId}`;
+  const options = { method: 'GET', headers: { accept: 'application/json' } };
+  try {
+    const res = await fetch(url, options);
+    const json = await res.json();
+    return {
+      content: [{ type: "text", text: JSON.stringify(json, null, 2) }]
+    };
+  } catch (err) {
+    return {
+      content: [{ type: "text", text: `Error: ${(err as Error).message}` }]
+    };
+  }
 });
 
 const transport = new StdioServerTransport();

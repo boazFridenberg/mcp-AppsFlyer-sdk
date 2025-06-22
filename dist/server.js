@@ -1,45 +1,20 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { startLogcatStream, stopLogcatStream, getRecentLogs } from "./logcat/stream.js";
+import { startLogcatStream, getRecentLogs } from "./logcat/stream.js";
 import { getParsedJsonLogs, getParsedAppsflyerErrors } from "./logcat/parse.js";
 import { z } from "zod";
 const server = new McpServer({
     name: "appsflyer-logcat-mcp-server",
     version: "1.0.0",
 });
-server.tool("startLogcatStream", {
-    filterTag: z.string().optional()
-}, async ({ filterTag }) => {
-    try {
-        startLogcatStream(filterTag);
-        return {
-            content: [{ type: "text", text: `Logcat started with filter: ${filterTag ?? "AppsFlyer_6.14.0"}` }]
-        };
-    }
-    catch (err) {
-        return {
-            content: [{ type: "text", text: `Error: ${err.message}` }]
-        };
-    }
-});
-server.tool("stopLogcatStream", {}, async () => {
-    try {
-        stopLogcatStream();
-        return {
-            content: [{ type: "text", text: "Logcat stopped." }]
-        };
-    }
-    catch (err) {
-        return {
-            content: [{ type: "text", text: `Error: ${err.message}` }]
-        };
-    }
-});
 server.tool("fetchAppsflyerLogs", {
     lineCount: z.number().default(100)
-}, async ({ lineCount }) => ({
-    content: [{ type: "text", text: getRecentLogs(lineCount) }]
-}));
+}, async ({ lineCount }) => {
+    startLogcatStream("AppsFlyer_6.14.0");
+    return {
+        content: [{ type: "text", text: getRecentLogs(lineCount) }]
+    };
+});
 server.tool("getConversionLogs", {
     lineCount: z.number().optional().default(50)
 }, async ({ lineCount }) => ({
@@ -68,6 +43,26 @@ server.tool("getAppsflyerErrors", {
     return {
         content: [{ type: "text", text: JSON.stringify(errors, null, 2) }]
     };
+});
+server.tool("testAppsFlyerSdk", {
+    appId: z.string(),
+    devKey: z.string(),
+    deviceId: z.string()
+}, async ({ appId, devKey, deviceId }) => {
+    const url = `https://gcdsdk.appsflyer.com/install_data/v4.0/${appId}?devkey=${devKey}&device_id=${deviceId}`;
+    const options = { method: 'GET', headers: { accept: 'application/json' } };
+    try {
+        const res = await fetch(url, options);
+        const json = await res.json();
+        return {
+            content: [{ type: "text", text: JSON.stringify(json, null, 2) }]
+        };
+    }
+    catch (err) {
+        return {
+            content: [{ type: "text", text: `Error: ${err.message}` }]
+        };
+    }
 });
 const transport = new StdioServerTransport();
 await server.connect(transport);
