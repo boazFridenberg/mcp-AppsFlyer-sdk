@@ -7,36 +7,36 @@ const server = new McpServer({
     name: "appsflyer-logcat-mcp-server",
     version: "1.0.0",
 });
-server.tool("fetchAppsflyerLogs", {
-    lineCount: z.number().default(100)
+server.tool("fetchAppsflyerLogs", { lineCount: z.number().default(100) }, {
+    description: "Fetches recent logcat logs related to AppsFlyer. Use this to locate appId and uid (device ID) if they're not known."
 }, async ({ lineCount }) => {
     startLogcatStream("AppsFlyer_6.14.0");
     return {
         content: [{ type: "text", text: getRecentLogs(lineCount) }]
     };
 });
-server.tool("getConversionLogs", {
-    lineCount: z.number().optional().default(50)
+server.tool("getConversionLogs", { lineCount: z.number().optional().default(50) }, {
+    description: "Extracts and returns conversion-related logs from recent logcat output. Useful for verifying conversion events from AppsFlyer."
 }, async ({ lineCount }) => ({
     content: [{ type: "text", text: JSON.stringify(getParsedJsonLogs(lineCount), null, 2) }]
 }));
-server.tool("getInAppLogs", {
-    lineCount: z.number().optional().default(50)
+server.tool("getInAppLogs", { lineCount: z.number().optional().default(50) }, {
+    description: "Returns logs related to in-app events tracked by AppsFlyer. Use this to confirm if in-app events are firing as expected."
 }, async ({ lineCount }) => ({
     content: [{ type: "text", text: JSON.stringify(getParsedJsonLogs(lineCount), null, 2) }]
 }));
-server.tool("getLaunchLogs", {
-    lineCount: z.number().optional().default(50)
+server.tool("getLaunchLogs", { lineCount: z.number().optional().default(50) }, {
+    description: "Parses logcat for app launch logs tied to AppsFlyer. Use when investigating whether the SDK detects app launches."
 }, async ({ lineCount }) => ({
     content: [{ type: "text", text: JSON.stringify(getParsedJsonLogs(lineCount), null, 2) }]
 }));
-server.tool("getDeepLinkLogs", {
-    lineCount: z.number().optional().default(50)
+server.tool("getDeepLinkLogs", { lineCount: z.number().optional().default(50) }, {
+    description: "Extracts logs related to deep linking via AppsFlyer. Use to debug whether deep links are being handled and parsed properly."
 }, async ({ lineCount }) => ({
     content: [{ type: "text", text: JSON.stringify(getParsedJsonLogs(lineCount), null, 2) }]
 }));
-server.tool("getAppsflyerErrors", {
-    lineCount: z.number().optional().default(50)
+server.tool("getAppsflyerErrors", { lineCount: z.number().optional().default(50) }, {
+    description: "Scans logcat for common AppsFlyer errors (e.g., exceptions, failures). Use this tool to detect SDK-related issues."
 }, async ({ lineCount }) => {
     const keywords = ["FAILURE", "ERROR", "Exception", "No deep link"];
     const errors = keywords.flatMap(keyword => getParsedAppsflyerErrors(lineCount, keyword));
@@ -47,9 +47,11 @@ server.tool("getAppsflyerErrors", {
 server.tool("testAppsFlyerSdk", {
     appId: z.string(),
     devKey: z.string(),
-    deviceId: z.string()
-}, async ({ appId, devKey, deviceId }) => {
-    const url = `https://gcdsdk.appsflyer.com/install_data/v4.0/${appId}?devkey=${devKey}&device_id=${deviceId}`;
+    uid: z.string()
+}, {
+    description: "Tests whether the AppsFlyer SDK is integrated correctly by querying install data using appId, devKey, and device ID (uid). To find appId and uid, run 'fetchAppsflyerLogs'. Dev key may be found in source code or should be requested from the user. When users ask if the AppsFlyer SDK is working, run this tool."
+}, async ({ appId, devKey, uid }) => {
+    const url = `https://gcdsdk.appsflyer.com/install_data/v4.0/${appId}?devkey=${devKey}&device_id=${uid}`;
     const options = { method: 'GET', headers: { accept: 'application/json' } };
     try {
         const res = await fetch(url, options);
