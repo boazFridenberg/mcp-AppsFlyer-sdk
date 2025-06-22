@@ -39,9 +39,12 @@ server.tool("stopLogcatStream", {}, async () => {
 
 server.tool("fetchAppsflyerLogs", {
   lineCount: z.number().default(100)
-}, async ({ lineCount }) => ({
-  content: [{ type: "text", text: getRecentLogs(lineCount) }]
-}));
+}, async ({ lineCount }) => {
+  startLogcatStream("AppsFlyer_6.14.0");
+  return {
+    content: [{ type: "text", text: getRecentLogs(lineCount) }]
+  };
+});
 
 server.tool("getConversionLogs", {
   lineCount: z.number().optional().default(50)
