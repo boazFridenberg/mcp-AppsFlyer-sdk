@@ -1,8 +1,8 @@
 import { spawn, ChildProcessWithoutNullStreams } from "child_process";
-import { getAdbPath, validateAdb } from "./adb";
+import { getAdbPath, validateAdb } from "../adb.js";
 
 const MAX_LINES = 5000;
-const logBuffer: string[] = [];
+export let logBuffer: string[] = [];
 let logcatProcess: ChildProcessWithoutNullStreams | null = null;
 
 /**
@@ -19,13 +19,13 @@ export function startLogcatStream(filterTag = "AppsFlyer_6.14.0"): void {
     validateAdb(adbPath);
 
     logcatProcess = spawn(adbPath, ["logcat", `${filterTag}:V`, "*:S"]);
-
     logcatProcess.stdout.setEncoding("utf8");
+
     logcatProcess.stdout.on("data", (data: string) => {
       const lines = data.split("\n").map(line => line.trim()).filter(Boolean);
-      for (const line of lines) {
-        logBuffer.push(line);
-        if (logBuffer.length > MAX_LINES) logBuffer.shift();
+      logBuffer.push(...lines);
+      if (logBuffer.length > MAX_LINES) {
+        logBuffer.splice(0, logBuffer.length - MAX_LINES);
       }
     });
 
@@ -73,7 +73,7 @@ export function stopLogcatStream(): void {
 }
 
 /**
- * Returns the recent log lines from buffer
+ * Returns recent raw log lines
  */
 export function getRecentLogs(lineCount = 100): string {
   return logBuffer.slice(-lineCount).join("\n");
