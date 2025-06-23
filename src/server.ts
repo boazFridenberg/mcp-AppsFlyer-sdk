@@ -1,7 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { startLogcatStream, stopLogcatStream, getRecentLogs } from "./logcat/stream.js";
-import { getParsedJsonLogs, getParsedAppsflyerErrors } from "./logcat/parse.js";
+import { startLogcatStream, getRecentLogs, logBuffer } from "./logcat/stream.js";
+import { getParsedJsonLogs, getParsedLogsByKeyword } from "./logcat/parse.js";
 import { z } from "zod";
 
 const server = new McpServer({
