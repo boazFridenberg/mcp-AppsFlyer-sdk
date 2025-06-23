@@ -44,10 +44,10 @@ function createLogTool(toolName: string, keyword: string, description: string) {
   );
 }
 
-createLogTool("getConversionLogs", "CONVERSION-", "Extracts conversion logs from logcat.");
-createLogTool("getInAppLogs", "INAPP-", "Returns in-app event logs from logcat.");
-createLogTool("getLaunchLogs", "LAUNCH-", "Parses app launch logs from logcat.");
-createLogTool("getDeepLinkLogs", "deepLink", "Extracts deep link-related logs from logcat.");
+createLogTool("getConversionLogs", "CONVERSION-", "Extracts conversion logs from logcat. Useful for verifying successful install/conversion events via AppsFlyer.");
+createLogTool("getInAppLogs", "INAPP-", "Returns in-app event logs captured by AppsFlyer. Use this to confirm event tracking works correctly.");
+createLogTool("getLaunchLogs", "LAUNCH-", "Parses app launch events from logcat. Helpful when debugging first opens or session tracking via AppsFlyer.");
+createLogTool("getDeepLinkLogs", "deepLink", "Extracts deep link-related logs from logcat. Use to verify if deep links are being detected and handled by the SDK.");
 
 server.tool(
   "getAppsflyerErrors",
