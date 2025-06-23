@@ -1,6 +1,6 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { startLogcatStream, getRecentLogs } from "./logcat/stream.js";
+import { startLogcatStream, getRecentLogs, logBuffer } from "./logcat/stream.js";
 import { getParsedJsonLogs, getParsedAppsflyerErrors } from "./logcat/parse.js";
 import { z } from "zod";
 
@@ -17,6 +17,12 @@ server.tool(
   },
   async ({ lineCount }) => {
     startLogcatStream("AppsFlyer_6.14.0");
+    // Wait for logs to appear if buffer is empty (max 2s, check every 200ms)
+    let waited = 0;
+    while (logBuffer.length === 0 && waited < 2000) {
+      await new Promise(res => setTimeout(res, 200));
+      waited += 200;
+    }
     return {
       content: [{ type: "text", text: getRecentLogs(lineCount) }]
     };

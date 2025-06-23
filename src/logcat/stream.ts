@@ -37,7 +37,6 @@ export function startLogcatStream(filterTag = "AppsFlyer_6.14.0"): void {
       console.warn(`Logcat stream exited with code ${code}`);
       logcatProcess = null;
       if (code !== 0) {
-        console.log("Attempting to restart logcat stream...");
         try {
           startLogcatStream(filterTag);
         } catch (err) {
@@ -46,7 +45,6 @@ export function startLogcatStream(filterTag = "AppsFlyer_6.14.0"): void {
       }
     });
 
-    console.log(`Started adb logcat stream with filter: ${filterTag}`);
   } catch (err) {
     logcatProcess = null;
     console.error("Failed to start adb logcat stream:", err);
