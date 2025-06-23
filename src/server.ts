@@ -28,50 +28,30 @@ server.tool(
     };
   }
 );
-
-server.tool(
-  "getConversionLogs",
-  { lineCount: z.number().optional().default(50) },
-  {
-    description: "Extracts and returns conversion-related logs from recent logcat output. Useful for verifying conversion events from AppsFlyer."
-  },
-  async ({ lineCount }) => ({
-    content: [{ type: "text", text: JSON.stringify(getParsedJsonLogs(lineCount), null, 2) }]
-  })
-);
-
-server.tool(
-  "getInAppLogs",
-  { lineCount: z.number().optional().default(50) },
-  {
-    description: "Returns logs related to in-app events tracked by AppsFlyer. Use this to confirm if in-app events are firing as expected."
-  },
-  async ({ lineCount }) => ({
-    content: [{ type: "text", text: JSON.stringify(getParsedJsonLogs(lineCount), null, 2) }]
-  })
-);
-
-server.tool(
-  "getLaunchLogs",
-  { lineCount: z.number().optional().default(50) },
-  {
-    description: "Parses logcat for app launch logs tied to AppsFlyer. Use when investigating whether the SDK detects app launches."
-  },
-  async ({ lineCount }) => ({
-    content: [{ type: "text", text: JSON.stringify(getParsedJsonLogs(lineCount), null, 2) }]
-  })
-);
-
-server.tool(
-  "getDeepLinkLogs",
-  { lineCount: z.number().optional().default(50) },
-  {
-    description: "Extracts logs related to deep linking via AppsFlyer. Use to debug whether deep links are being handled and parsed properly."
-  },
-  async ({ lineCount }) => ({
-    content: [{ type: "text", text: JSON.stringify(getParsedJsonLogs(lineCount), null, 2) }]
-  })
-);
+function createLogTool(toolName: string, keyword: string, description: string) {
+  server.tool(
+    toolName,
+    { lineCount: z.number().optional().default(50) },
+    { description },
+    async ({ lineCount }) => {
+      const logs = getParsedLogsByKeyword(lineCount, keyword);
+      return {
+        content: [
+          {
+            type: "text",
+            text: logs.length
+              ? JSON.stringify(logs, null, 2)
+              : `No log entries found for keyword: ${keyword}`
+          }
+        ]
+      };
+    }
+  );
+}
+createLogTool("getConversionLogs", "CONVERSION-", "Extracts conversion logs from logcat. Useful for verifying successful install/conversion events via AppsFlyer.");
+createLogTool("getInAppLogs", "INAPP-", "Returns in-app event logs captured by AppsFlyer. Use this to confirm event tracking works correctly.");
+createLogTool("getLaunchLogs", "LAUNCH-", "Parses app launch events from logcat. Helpful when debugging first opens or session tracking via AppsFlyer.");
+createLogTool("getDeepLinkLogs", "deepLink", "Extracts deep link-related logs from logcat. Use to verify if deep links are being detected and handled by the SDK.");
 
 server.tool(
   "getAppsflyerErrors",
