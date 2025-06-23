@@ -41,7 +41,7 @@ export function getParsedJsonLogs(lineCount: number) {
   return jsonObjects;
 }
  
-export function getParsedLogsByKeyword(lineCount: number, keyword: string): ParsedLog[] {
+export function getParsedAppsflyerErrors(lineCount: number, keyword: string): ParsedLog[] {
   const lines = logBuffer.filter(
     line => line.includes("AppsFlyer") && line.includes(keyword)
   );
@@ -51,12 +51,15 @@ export function getParsedLogsByKeyword(lineCount: number, keyword: string): Pars
   return recent
     .map(line => {
       const json = extractJsonFromLine(line);
-      return json ? {
-        timestamp: line.substring(0, 18),
-        type: keyword,
-        json
-      } : null;
+      return json
+        ? {
+            timestamp: line.substring(0, 18),
+            type: keyword,
+            json
+          }
+        : null;
     })
     .filter(Boolean) as ParsedLog[];
 }
+
 

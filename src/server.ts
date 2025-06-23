@@ -1,7 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { startLogcatStream, getRecentLogs, logBuffer } from "./logcat/stream.js";
-import { getParsedJsonLogs, getParsedLogsByKeyword } from "./logcat/parse.js";
+import { getParsedJsonLogs, getParsedAppsflyerErrors } from "./logcat/parse.js";
 import { z } from "zod";
 
 const server = new McpServer({
@@ -34,7 +34,7 @@ function createLogTool(toolName: string, keyword: string, description: string) {
     { lineCount: z.number().optional().default(50) },
     { description },
     async ({ lineCount }) => {
-      const logs = getParsedLogsByKeyword(lineCount, keyword);
+      const logs = getParsedAppsflyerErrors(lineCount, keyword);
       return {
         content: [
           {
@@ -61,7 +61,7 @@ server.tool(
   },
   async ({ lineCount }) => {
     const keywords = ["FAILURE", "ERROR", "Exception", "No deep link"];
-    const errors = keywords.flatMap(keyword => getParsedLogsByKeyword(lineCount, keyword));
+    const errors = keywords.flatMap(keyword => getParsedAppsflyerErrors(lineCount, keyword));
     return {
       content: [{ type: "text", text: JSON.stringify(errors, null, 2) }]     
     };
