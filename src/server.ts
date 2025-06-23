@@ -13,7 +13,9 @@ server.tool(
   "fetchAppsflyerLogs",
   { lineCount: z.number().default(100) },
   {
-    description: "Fetches recent logcat logs related to AppsFlyer. Use this to locate appId and uid (device ID) if they're not known."
+    description: "Fetches recent logcat logs related to AppsFlyer. Use this to locate appId and uid (device ID) if they're not known. Use this tool for any request to get, show, or fetch AppsFlyer logs, logcat output, or raw logs.",
+    intent: ["get logs", "show logs", "fetch logs", "appsflyer logs", "logcat", "raw logs", "recent logs", "logs"],
+    keywords: ["logs", "appsflyer", "logcat", "fetch", "get", "show"]
   },
   async ({ lineCount }) => {
     startLogcatStream("AppsFlyer_6.14.0");
