@@ -1,6 +1,6 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { startLogcatStream, stopLogcatStream, getRecentLogs } from "./logcat/stream.js";
+import { startLogcatStream, getRecentLogs } from "./logcat/stream.js";
 import { getParsedJsonLogs, getParsedAppsflyerErrors } from "./logcat/parse.js";
 import { z } from "zod";
 
@@ -25,7 +25,7 @@ server.tool(
 
 server.tool(
   "getConversionLogs",
-  { lineCount: z.number().optional().default(50) },
+  { lineCount: z.number().optional().default(50)},
   {
     description: "Extracts and returns conversion-related logs from recent logcat output. Useful for verifying conversion events from AppsFlyer."
   },
@@ -77,7 +77,7 @@ server.tool(
     const keywords = ["FAILURE", "ERROR", "Exception", "No deep link"];
     const errors = keywords.flatMap(keyword => getParsedAppsflyerErrors(lineCount, keyword));
     return {
-      content: [{ type: "text", text: JSON.stringify(errors, null, 2) }]
+      content: [{ type: "text", text: JSON.stringify(errors, null, 2) }]     
     };
   }
 );

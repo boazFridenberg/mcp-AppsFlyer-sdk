@@ -55,24 +55,6 @@ export function startLogcatStream(filterTag = "AppsFlyer_6.14.0"): void {
 }
 
 /**
- * Stops adb logcat stream if running
- */
-export function stopLogcatStream(): void {
-  if (!logcatProcess) {
-    console.warn("Logcat stream is not running.");
-    return;
-  }
-
-  try {
-    logcatProcess.kill();
-    logcatProcess = null;
-    console.log("Stopped adb logcat stream.");
-  } catch (err) {
-    console.error("Error stopping adb logcat stream:", err);
-  }
-}
-
-/**
  * Returns recent raw log lines
  */
 export function getRecentLogs(lineCount = 100): string {
