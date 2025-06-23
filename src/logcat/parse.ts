@@ -40,22 +40,23 @@ export function getParsedJsonLogs(lineCount: number) {
     .filter((log): log is ParsedLog => log !== null);
   return jsonObjects;
 }
+ 
+export function getParsedLogsByKeyword(lineCount: number, keyword: string): ParsedLog[] {
+  const lines = logBuffer.filter(
+    line => line.includes("AppsFlyer") && line.includes(keyword)
+  );
 
-export function getParsedAppsflyerErrors(lineCount: number, type: string) {
-  if (logBuffer.length === 0) {
-    return [];
-  }
-  const lines = logBuffer.filter((line: string) => line.includes(type)).slice(-lineCount);
-  return lines;
+  const recent = lines.slice(-lineCount);
+
+  return recent
+    .map(line => {
+      const json = extractJsonFromLine(line);
+      return json ? {
+        timestamp: line.substring(0, 18),
+        type: keyword,
+        json
+      } : null;
+    })
+    .filter(Boolean) as ParsedLog[];
 }
 
-export function getRecentLogs(lineCount: number, type: string) {
-  if (logBuffer.length === 0) {
-    return [];
-  }
-  return logBuffer
-    .filter((line: string) =>
-      z.string().min(1).optional().parse(line?.includes(type))
-    )
-    .slice(-lineCount);
-}
