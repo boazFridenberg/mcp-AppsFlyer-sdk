@@ -41,7 +41,7 @@ export function getParsedJsonLogs(lineCount: number) {
   return jsonObjects;
 }
  
-export function getParsedAppsflyerErrors(lineCount: number, keyword: string): ParsedLog[] {
+export function getParsedAppsflyerFilters(lineCount: number, keyword: string): ParsedLog[] {
   const lines = logBuffer.filter(
     line => line.includes("AppsFlyer") && line.includes(keyword)
   );
