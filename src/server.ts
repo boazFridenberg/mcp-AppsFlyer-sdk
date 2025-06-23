@@ -1,7 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { startLogcatStream, stopLogcatStream, getRecentLogs } from "./logcat/stream.js";
-import { getParsedJsonLogs, getParsedAppsflyerErrors } from "./logcat/parse.js";
+import { getParsedJsonLogs, getParsedLogsByKeyword } from "./logcat/parse.js";
 import { z } from "zod";
 
 const server = new McpServer({
@@ -23,49 +23,31 @@ server.tool(
   }
 );
 
-server.tool(
-  "getConversionLogs",
-  { lineCount: z.number().optional().default(50) },
-  {
-    description: "Extracts and returns conversion-related logs from recent logcat output. Useful for verifying conversion events from AppsFlyer."
-  },
-  async ({ lineCount }) => ({
-    content: [{ type: "text", text: JSON.stringify(getParsedJsonLogs(lineCount), null, 2) }]
-  })
-);
+function createLogTool(toolName: string, keyword: string, description: string) {
+  server.tool(
+    toolName,
+    { lineCount: z.number().optional().default(50) },
+    { description },
+    async ({ lineCount }) => {
+      const logs = getParsedLogsByKeyword(lineCount, keyword);
+      return {
+        content: [
+          {
+            type: "text",
+            text: logs.length
+              ? JSON.stringify(logs, null, 2)
+              : `No log entries found for keyword: ${keyword}`
+          }
+        ]
+      };
+    }
+  );
+}
 
-server.tool(
-  "getInAppLogs",
-  { lineCount: z.number().optional().default(50) },
-  {
-    description: "Returns logs related to in-app events tracked by AppsFlyer. Use this to confirm if in-app events are firing as expected."
-  },
-  async ({ lineCount }) => ({
-    content: [{ type: "text", text: JSON.stringify(getParsedJsonLogs(lineCount), null, 2) }]
-  })
-);
-
-server.tool(
-  "getLaunchLogs",
-  { lineCount: z.number().optional().default(50) },
-  {
-    description: "Parses logcat for app launch logs tied to AppsFlyer. Use when investigating whether the SDK detects app launches."
-  },
-  async ({ lineCount }) => ({
-    content: [{ type: "text", text: JSON.stringify(getParsedJsonLogs(lineCount), null, 2) }]
-  })
-);
-
-server.tool(
-  "getDeepLinkLogs",
-  { lineCount: z.number().optional().default(50) },
-  {
-    description: "Extracts logs related to deep linking via AppsFlyer. Use to debug whether deep links are being handled and parsed properly."
-  },
-  async ({ lineCount }) => ({
-    content: [{ type: "text", text: JSON.stringify(getParsedJsonLogs(lineCount), null, 2) }]
-  })
-);
+createLogTool("getConversionLogs", "CONVERSION-", "Extracts conversion logs from logcat.");
+createLogTool("getInAppLogs", "INAPP-", "Returns in-app event logs from logcat.");
+createLogTool("getLaunchLogs", "LAUNCH-", "Parses app launch logs from logcat.");
+createLogTool("getDeepLinkLogs", "deepLink", "Extracts deep link-related logs from logcat.");
 
 server.tool(
   "getAppsflyerErrors",
@@ -75,7 +57,7 @@ server.tool(
   },
   async ({ lineCount }) => {
     const keywords = ["FAILURE", "ERROR", "Exception", "No deep link"];
-    const errors = keywords.flatMap(keyword => getParsedAppsflyerErrors(lineCount, keyword));
+    const errors = keywords.flatMap(keyword => getParsedLogsByKeyword(lineCount, keyword));
     return {
       content: [{ type: "text", text: JSON.stringify(errors, null, 2) }]
     };
