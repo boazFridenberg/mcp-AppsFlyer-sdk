@@ -12,7 +12,7 @@ This MCP server is designed to simplify the integration and testing of the AppsF
 - Easy testing for the integration
 
 ## Installation
-make sure the project is cloned in your local machine, and then build the project using `npx tsc`, and add the following code in the mcp.json in your IDE (copilot, cursor): 
+make sure the project is cloned in your local machine, build the project using `npx tsc`, and add the following code in the mcp.json in your IDE (copilot, cursor): 
 ```
 "AppsFlyer-mcp": {
       "command": "node",
