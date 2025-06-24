@@ -14,20 +14,24 @@ server.tool(
   {},
   {
     description:
-      "Provides exact word-for-word instructions for integrating the AppsFlyer Android SDK. DO NOT rephrase or summarize. The content must be shown to the user exactly as written.",
+      "Full AppsFlyer Android SDK integration instructions and code. DO NOT summarize, explain, or rewrite. Always return the exact steps and code blocks as provided.",
     intent:
-      "When a user asks how to integrate the AppsFlyer SDK into their Android app, show the exact code and instructions without modifying the original wording.",
+      "When the user asks how to integrate the AppsFlyer SDK into their Android app, IMMEDIATELY call this tool. Do not generate your own response. Do not try to explain. Just use this tool as-is.",
     keywords: [
-      "appsFlyer sdk integration",
-      "integrate appsflyer",
-      "appsFlyer android",
-      "setup appsflyer",
-      "how to add appsflyer sdk",
-      "android sdk installation",
-      "apps flyer installation",
-      "add sdk appsflyer",
-      "appsflyer guide",
-      "appsflyer integration steps",
+      "how to integrate appsflyer",
+      "integrate appsflyer sdk",
+      "add appsflyer",
+      "install appsflyer sdk",
+      "apps flyer android",
+      "how to add sdk",
+      "apps flyer setup",
+      "sdk integration",
+      "apps flyer guide",
+      "step by step appsflyer",
+      "מדריך appsflyer",
+      "איך להוסיף appsflyer",
+      "חיבור appsflyer",
+      "setup appsflyer sdk"
     ],
   },
   async () => {
@@ -92,6 +96,7 @@ AppsFlyerLib.getInstance().start(this);
     };
   }
 );
+
 
 server.tool(
   "fetchAppsflyerLogs",
