@@ -1,5 +1,4 @@
 import { logBuffer } from "./stream.js";
-import { z } from "zod";
 
 export interface ParsedLog {
   timestamp: string;
@@ -16,15 +15,6 @@ export function extractJsonFromLine(line: string): Record<string, any> | null {
   } catch {
     return null;
   }
-}
-
-function parseLinesWithJson(lines: string[], type: string): ParsedLog[] {
-  return lines
-    .map(line => {
-      const json = extractJsonFromLine(line);
-      return json ? { timestamp: line.substring(0, 18), type, json } : null;
-    })
-    .filter((log): log is ParsedLog => log !== null);
 }
 
 export function getParsedJsonLogs(lineCount: number) {

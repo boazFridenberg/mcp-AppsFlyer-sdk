@@ -25,7 +25,6 @@ server.tool(
       `⚠️ Use exactly as written below. Do not modify.\n`,
       ...integrateAppsFlyerSdkInstructions
     ];
-
     return {
       content: [
         {
