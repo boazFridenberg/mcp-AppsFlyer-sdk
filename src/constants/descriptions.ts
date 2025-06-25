@@ -24,60 +24,55 @@ export const descriptions = {
       "Tests whether the AppsFlyer SDK is integrated correctly by querying install data using appId, devKey, and device ID (uid). To find appId and uid, run 'fetchAppsflyerLogs'. Dev key may be found in source code or should be requested from the user. When users ask if the AppsFlyer SDK is working, run this tool.",
   };
 
-  export const integrateAppsFlyerSdkInstructions = [
-    `⚠️ Use exactly as written below. Do not modify.\n`,
-  
-    `1. Declare repositories  
-  In the **Project** \`build.gradle\` file, declare the \`mavenCentral\` repository:
-  
-  \`\`\`gradle
-  repositories {
-    mavenCentral()
-  }
-  \`\`\``,
-  
-    `2. Add the SDK dependency  
-  In the **Application** \`build.gradle\` file, add the latest SDK package:
-  
-  \`\`\`gradle
-  dependencies { 
-    // Get the latest version from https://mvnrepository.com/artifact/com.appsflyer/af-android-sdk 
-    implementation 'com.appsflyer:af-android-sdk'
-  }
-  \`\`\``,
-  
-    `3. Add permissions  
-  Add the following permissions to \`AndroidManifest.xml\` inside the \`<manifest>\` section:
-  
-  \`\`\`xml
-  <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
-    package="com.appsflyer.onelink.appsflyeronelinkbasicapp">
-  
-    <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-  </manifest>
-  \`\`\``,
-  
-    `4. Import AppsFlyer SDK  
-  In your global \`Application\` class, import AppsFlyerLib:
-  
-  \`\`\`java
-  import com.appsflyer.AppsFlyerLib;
-  \`\`\``,
-  
-    `5. Initialize the SDK  
-  Inside the \`onCreate()\` method of your \`Application\` class, call \`init\`:
-  
-  \`\`\`java
-  AppsFlyerLib.getInstance().init("sQ84wpdxRTR4RMCaE9YqS4", null, this);
-  \`\`\``,
-  
-    `6. Start the SDK  
-  Right after \`init()\`, call \`start()\` with context:
-  
-  \`\`\`java
-  AppsFlyerLib.getInstance().start(this);
-  \`\`\``,
-  ];
-  
+    export const integrateAppsFlyerSdkInstructions: string[] = [
+  `⚠️ Use exactly as written below. Do not modify.\n`,
+
+  `**1. Declare repositories**  
+In the **Project** \`build.gradle\` file, declare the \`mavenCentral\` repository:
+
+\`\`\`gradle
+repositories {
+  mavenCentral()
+}
+\`\`\``,
+
+  `**2. Add Dependencies**  
+In the **Application** \`build.gradle\` file, add the latest SDK package:
+
+\`\`\`gradle
+dependencies { 
+  // Get the latest version from https://mvnrepository.com/artifact/com.appsflyer/af-android-sdk 
+  implementation 'com.appsflyer:af-android-sdk'
+}
+\`\`\``,
+
+  `**3. Setting required permissions**  
+Add the following permissions inside your \`AndroidManifest.xml\`:
+
+\`\`\`xml
+package="com.appsflyer.onelink.appsflyeronelinkbasicapp">
+<uses-permission android:name="android.permission.INTERNET" />
+<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+\`\`\``,
+
+  `**4. Start SDK**  
+In your global \`Application\` class, import:
+
+\`\`\`java
+import com.appsflyer.AppsFlyerLib;
+\`\`\``,
+
+  `**5. Initialize the SDK**  
+Inside the \`onCreate()\` method of your \`Application\` class, call:
+
+\`\`\`java
+AppsFlyerLib.getInstance().init("<YOUR-DEV-KEY>", null, this);
+\`\`\``,
+
+  `**6. Starting the SDK**  
+Immediately after \`init()\`, call:
+
+\`\`\`java
+AppsFlyerLib.getInstance().start(this);
+\`\`\``,
+];
