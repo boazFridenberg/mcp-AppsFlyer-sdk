@@ -38,6 +38,35 @@ server.tool(
 );
 
 server.tool(
+  "testAppsFlyerSdk",
+  {
+    appId: z.string(),
+    devKey: z.string(),
+    uid: z.string(),
+  },
+  {
+    description: descriptions.testAppsFlyerSdk,
+    intent: intents.testAppsFlyerSdk,
+    keywords: keywords.testAppsFlyerSdk,
+  },
+  async ({ appId, devKey, uid }) => {
+    const url = `https://gcdsdk.appsflyer.com/install_data/v4.0/${appId}?devkey=${devKey}&device_id=${uid}`;
+    const options = { method: "GET", headers: { accept: "application/json" } };
+    try {
+      const res = await fetch(url, options);
+      const json = await res.json();
+      return {
+        content: [{ type: "text", text: JSON.stringify(json, null, 2) }],
+      };
+    } catch (err) {
+      return {
+        content: [{ type: "text", text: `Error: ${(err as Error).message}` }],
+      };
+    }
+  }
+);
+
+server.tool(
   "fetchAppsflyerLogs",
   { lineCount: z.number().default(100) },
   {
@@ -106,35 +135,6 @@ server.tool(
     return {
       content: [{ type: "text", text: JSON.stringify(errors, null, 2) }],
     };
-  }
-);
-
-server.tool(
-  "testAppsFlyerSdk",
-  {
-    appId: z.string(),
-    devKey: z.string(),
-    uid: z.string(),
-  },
-  {
-    description: descriptions.testAppsFlyerSdk,
-    intent: intents.testAppsFlyerSdk,
-    keywords: keywords.testAppsFlyerSdk,
-  },
-  async ({ appId, devKey, uid }) => {
-    const url = `https://gcdsdk.appsflyer.com/install_data/v4.0/${appId}?devkey=${devKey}&device_id=${uid}`;
-    const options = { method: "GET", headers: { accept: "application/json" } };
-    try {
-      const res = await fetch(url, options);
-      const json = await res.json();
-      return {
-        content: [{ type: "text", text: JSON.stringify(json, null, 2) }],
-      };
-    } catch (err) {
-      return {
-        content: [{ type: "text", text: `Error: ${(err as Error).message}` }],
-      };
-    }
   }
 );
 
