@@ -61,5 +61,3 @@ export function getParsedAppsflyerFilters(lineCount: number, keyword: string): P
     })
     .filter(Boolean) as ParsedLog[];
 }
-
-
