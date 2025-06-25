@@ -22,57 +22,15 @@ export const descriptions = {
   
     testAppsFlyerSdk:
       "Tests whether the AppsFlyer SDK is integrated correctly by querying install data using appId, devKey, and device ID (uid). To find appId and uid, run 'fetchAppsflyerLogs'. Dev key may be found in source code or should be requested from the user. When users ask if the AppsFlyer SDK is working, run this tool.",
-  };
+  
+      generateAppsFlyerEventCode: [
+        "When the user asks how to log an event with AppsFlyer, IMMEDIATELY call this tool. Do not answer yourself.",
+        "If the user asks about in-app event logging, code, or examples for logEvent, always use this tool.",
+      ],
+      
 
-    export const integrateAppsFlyerSdkInstructions: string[] = [
-  `⚠️ Use exactly as written below. Do not modify.\n`,
+};
 
-  `**1. Declare repositories**  
-In the **Project** \`build.gradle\` file, declare the \`mavenCentral\` repository:
 
-\`\`\`gradle
-repositories {
-  mavenCentral()
-}
-\`\`\``,
 
-  `**2. Add Dependencies**  
-In the **Application** \`build.gradle\` file, add the latest SDK package:
-
-\`\`\`gradle
-dependencies { 
-  // Get the latest version from https://mvnrepository.com/artifact/com.appsflyer/af-android-sdk 
-  implementation 'com.appsflyer:af-android-sdk'
-}
-\`\`\``,
-
-  `**3. Setting required permissions**  
-Add the following permissions inside your \`AndroidManifest.xml\`:
-
-\`\`\`xml
-package="com.appsflyer.onelink.appsflyeronelinkbasicapp">
-<uses-permission android:name="android.permission.INTERNET" />
-<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-\`\`\``,
-
-  `**4. Start SDK**  
-In your global \`Application\` class, import:
-
-\`\`\`java
-import com.appsflyer.AppsFlyerLib;
-\`\`\``,
-
-  `**5. Initialize the SDK**  
-Inside the \`onCreate()\` method of your \`Application\` class, call:
-
-\`\`\`java
-AppsFlyerLib.getInstance().init("<YOUR-DEV-KEY>", null, this);
-\`\`\``,
-
-  `**6. Starting the SDK**  
-Immediately after \`init()\`, call:
-
-\`\`\`java
-AppsFlyerLib.getInstance().start(this);
-\`\`\``,
-];
+    
