@@ -52,7 +52,7 @@ export const steps = {
   \`\`\``,
     ],
   
-    generateAppsFlyerEventCode: (includeListener: boolean): string[] => [
+    createAppsFlyerLogEvent: (includeListener: boolean): string[] => [
   `🚨 Copy exactly as written below. Do NOT change anything. Every word matters!\n`,
 
   `**1. Import predefined event names**  

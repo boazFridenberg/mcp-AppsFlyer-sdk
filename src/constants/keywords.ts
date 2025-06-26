@@ -68,7 +68,7 @@ export const keywords = {
       "check integration",
       "is appsflyer working"
     ],
-    generateAppsFlyerEventCode: [
+    createAppsFlyerLogEvent: [
       "log event appsflyer",
       "apps flyer logEvent",
       "track event",

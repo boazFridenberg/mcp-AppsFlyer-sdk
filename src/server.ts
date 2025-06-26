@@ -137,21 +137,21 @@ server.tool(
 );
 
 server.tool(
-  "generateAppsFlyerEventCode",
+  "createAppsFlyerLogEvent",
   {
     includeListener: z.boolean().optional().default(false),
   },
   {
-    description: descriptions.generateAppsFlyerEventCode,
-    intent: intents.generateAppsFlyerEventCode,
-    keywords: keywords.generateAppsFlyerEventCode,
+    description: descriptions.createAppsFlyerLogEvent,
+    intent: intents.createAppsFlyerLogEvent,
+    keywords: keywords.createAppsFlyerLogEvent,
   },
   async ({ includeListener }) => {
     return {
       content: [
         {
           type: "text",
-          text: steps.generateAppsFlyerEventCode(includeListener).join("\n"),
+          text: steps.createAppsFlyerLogEvent(includeListener).join("\n"),
         },
       ],
     };
