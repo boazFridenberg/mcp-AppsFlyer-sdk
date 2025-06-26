@@ -16,20 +16,6 @@ export function extractJsonFromLine(line: string): Record<string, any> | null {
     return null;
   }
 }
-
-export function getParsedJsonLogs(lineCount: number) {
-  if (logBuffer.length === 0) {
-    return [];
-  }
-  const lines = logBuffer.slice(-lineCount);
-  const jsonObjects = lines
-    .map((line) => {
-      const json = extractJsonFromLine(line);
-      return json ? { timestamp: line.substring(0, 18), type: line.split(" ")[0], json } : null;
-    })
-    .filter((log): log is ParsedLog => log !== null);
-  return jsonObjects;
-}
  
 export function getParsedAppsflyerFilters(lineCount: number, keyword: string): ParsedLog[] {
   const lines = logBuffer.filter(
