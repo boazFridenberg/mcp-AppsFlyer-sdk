@@ -23,7 +23,7 @@ export const descriptions = {
     testAppsFlyerSdk:
       "Tests whether the AppsFlyer SDK is integrated correctly by querying install data using appId, devKey, and device ID (uid). To find appId and uid, run 'fetchAppsflyerLogs'. Dev key may be found in source code or should be requested from the user. When users ask if the AppsFlyer SDK is working, run this tool.",
   
-        createAppsFlyerLogEvent: `Provides exact, step-by-step code for logging in-app events with AppsFlyer. This tool MUST be used for any request involving logEvent, event tracking, or event listener integration.`,
+  createAppsFlyerLogEvent: "Generates exact code instructions for logging an in-app event using AppsFlyer. Always use this tool when event tracking with logEvent is mentioned. Do not answer manually."
 
       
 

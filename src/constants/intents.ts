@@ -41,7 +41,8 @@ If the user wants to test if the AppsFlyer SDK is working, validate the setup, o
 Never explain. Never simulate test output.
 `,
 createAppsFlyerLogEvent: [
-  "When the user asks how to log an event with AppsFlyer, IMMEDIATELY call this tool. Do not answer yourself.",
-  "If the user asks about in-app event logging, code, or examples for logEvent, always use this tool.",
-],
+    "When the user asks how to log an event with AppsFlyer, IMMEDIATELY call this tool. Do not answer yourself.",
+    "If the user asks about in-app event logging, code, or examples for logEvent, always use this tool.",
+    "If the user asks about sending events to AppsFlyer in any way, never explain manually. Always call this tool first."
+  ]
 };
