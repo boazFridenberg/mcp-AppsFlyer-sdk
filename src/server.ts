@@ -136,27 +136,37 @@ server.tool(
   }
 );
 
+
 server.tool(
   "createAppsFlyerLogEvent",
   {
-    includeListener: z.boolean().optional().default(false),
+    hasListener: z.enum(["yes", "no"], {
+      required_error: "Please indicate if you are using a listener or not",
+    }),
   },
   {
     description: descriptions.createAppsFlyerLogEvent,
     intent: intents.createAppsFlyerLogEvent,
     keywords: keywords.createAppsFlyerLogEvent,
   },
-  async ({ includeListener }) => {
+  async ({ hasListener }) => {
+    const includeListener = hasListener === "yes";
+    const instructions = steps.createAppsFlyerLogEvent(includeListener);
+
     return {
       content: [
         {
           type: "text",
-          text: steps.createAppsFlyerLogEvent(includeListener).join("\n"),
+          text: instructions.join("\n\n"),
         },
       ],
     };
   }
 );
+
+
+
+
 const transport = new StdioServerTransport();
 await server.connect(transport);
 console.log("MCP server running with stdio transport...");
