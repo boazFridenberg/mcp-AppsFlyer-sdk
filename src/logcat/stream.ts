@@ -10,35 +10,21 @@ let logcatProcess: ChildProcessWithoutNullStreams | null = null;
 let restartAttempts = 0;
 let currentDeviceId: string | null = null;
 
-export async function startLogcatStream(
-  filterTag = "AppsFlyer_6.14.0",
-  deviceIdParam?: string
-): Promise<void> {
+export async function startLogcatStream(filterTag = "AppsFlyer_6.14.0", deviceIdParam?: string): Promise<void> {
   const adbPath = getAdbPath();
   validateAdb(adbPath);
-
   const devices = getConnectedDevices(adbPath);
-  let deviceId = deviceIdParam;
 
-  if (!deviceId) {
-    if (devices.length === 0) {
-      throw new Error("[Logcat] No devices connected to ADB.");
-    } else if (devices.length > 1) {
-      throw new Error("[Logcat] Multiple devices connected. Specify deviceId.");
-    } else {
-      deviceId = devices[0];
-    }
-  }
+  const deviceId = deviceIdParam || (() => {
+    if (devices.length === 0) throw new Error("[Logcat] No devices connected.");
+    if (devices.length > 1) throw new Error("[Logcat] Multiple devices found. Specify deviceId.");
+    return devices[0];
+  })();
 
-  // Efficient restart logic
   if (logcatProcess) {
-    if (deviceId === currentDeviceId) {
-      console.warn("[Logcat] Stream already running for this device.");
-      return;
-    } else {
-      console.warn(`[Logcat] Restarting stream for new device: ${deviceId}`);
-      stopLogcatStream();
-    }
+    if (deviceId === currentDeviceId) return console.warn("[Logcat] Already streaming this device.");
+    stopLogcatStream();
+    console.warn(`[Logcat] Switching to device: ${deviceId}`);
   }
 
   logcatProcess = spawn(adbPath, ["-s", deviceId, "logcat", `${filterTag}:V`, "*:S"]);
@@ -48,26 +34,21 @@ export async function startLogcatStream(
   logcatProcess.stdout.on("data", (data: string) => {
     const lines = data.split("\n").map(line => line.trim()).filter(Boolean);
     logBuffer.push(...lines);
-    if (logBuffer.length > MAX_LINES) {
-      logBuffer.splice(0, logBuffer.length - MAX_LINES);
-    }
+    if (logBuffer.length > MAX_LINES) logBuffer.splice(0, logBuffer.length - MAX_LINES);
   });
 
-  logcatProcess.stderr.on("data", err => {
-    console.error("[Logcat stderr]", err.toString());
-  });
+  logcatProcess.stderr.on("data", err => console.error("[Logcat stderr]", err.toString()));
 
   logcatProcess.on("exit", code => {
-    console.warn(`Logcat stream exited with code ${code}`);
+    console.warn(`[Logcat] Stream exited (${code})`);
     logcatProcess = null;
     currentDeviceId = null;
 
-    if (code !== 0 && restartAttempts < MAX_RESTARTS) {
-      restartAttempts++;
-      console.warn(`[Logcat] Restarting logcat stream (attempt ${restartAttempts})...`);
+    if (code !== 0 && restartAttempts++ < MAX_RESTARTS) {
+      console.warn(`[Logcat] Restarting (attempt ${restartAttempts})...`);
       setTimeout(() => startLogcatStream(filterTag, deviceId), RESTART_DELAY_MS);
     } else if (restartAttempts >= MAX_RESTARTS) {
-      console.error("Max logcat restart attempts reached.");
+      console.error("[Logcat] Max restart attempts reached.");
     } else {
       restartAttempts = 0;
     }
@@ -77,28 +58,21 @@ export async function startLogcatStream(
 }
 
 export function stopLogcatStream(): void {
-  if (!logcatProcess) {
-    console.warn("Logcat stream is not running.");
-    return;
-  }
+  if (!logcatProcess) return console.warn("[Logcat] No active stream.");
   try {
     logcatProcess.kill();
     logcatProcess = null;
     currentDeviceId = null;
-    console.log("Stopped adb logcat stream.");
+    logBuffer = [];
+    console.log("[Logcat] Stream stopped.");
   } catch (err) {
-    console.error("Error stopping adb logcat stream:", err);
+    console.error("[Logcat] Failed to stop stream:", err);
   }
 }
 
-export function getRecentLogs(lineCount = 100): string {
-  return logBuffer.slice(-lineCount).join("\n");
-}
+export const getRecentLogs = (lines = 100): string =>
+  logBuffer.slice(-lines).join("\n");
 
-export function getCurrentDeviceId(): string | null {
-  return currentDeviceId;
-}
+export const getCurrentDeviceId = (): string | null => currentDeviceId;
 
-export function isStreaming(): boolean {
-  return logcatProcess !== null;
-}
+export const isStreaming = (): boolean => !!logcatProcess;
