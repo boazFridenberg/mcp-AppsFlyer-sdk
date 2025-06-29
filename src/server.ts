@@ -164,6 +164,55 @@ server.tool(
   }
 );
 
+server.tool(
+  "autoCheckAppsFlyerIntegration",
+  { lineCount: z.number().optional().default(200) },
+  {
+    description: "Automatically checks AppsFlyer integration from device logs (logcat) based on 3-step process.",
+    intent: "Auto-verify AppsFlyer SDK integration via logs",
+    keywords: ["appsFlyer", "integration", "logcat", "auto-check", "debug", "event"],
+  },
+  async ({ lineCount }) => {
+    startLogcatStream("AppsFlyer_6.13.0");
+
+    // Wait briefly for logs to populate
+    for (let waited = 0; logBuffer.length === 0 && waited < 3000; waited += 300) {
+      await new Promise((r) => setTimeout(r, 300));
+    }
+
+    const logs = getRecentLogs(lineCount);
+
+    // Define checks for the 3 steps
+    const checks = [
+      {
+        passed: /setDebugLog\(true\)|\[HTTP Client\]/.test(logs),
+        failMsg: "Step 1 failed: Debug mode not enabled."
+      },
+      {
+        passed: /ADD_PAYMENT_INFO event logged successfully/.test(logs),
+        failMsg: "Step 2 failed: Event not prepared correctly in logs."
+      },
+      {
+        passed: /POST:.*androidevent\?app_id=/.test(logs),
+        failMsg: "Step 3 failed: Event not sent (missing androidevent log)."
+      }
+    ];
+
+    const failures = checks.filter(c => !c.passed).map(c => c.failMsg);
+
+    return {
+      content: [
+        {
+          type: "text",
+          text: failures.length
+            ? `❌ AppsFlyer Integration check failed:\n- ${failures.join("\n- ")}`
+            : "✅ All AppsFlyer integration steps passed successfully."
+        },
+      ],
+    };
+  }
+);
+
 
 
 
