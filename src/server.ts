@@ -1,13 +1,13 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { startLogcatStream, getRecentLogs, logBuffer } from "./logcat/stream.js";
+import { startLogcatStream, getRecentLogs, logBuffer, stopLogcatStream,} from "./logcat/stream.js";
 import { getParsedAppsflyerFilters } from "./logcat/parse.js";
 import { z } from "zod";
 import { descriptions } from "./constants/descriptions.js";
 import { intents } from "./constants/intents.js";
 import { keywords } from "./constants/keywords.js";
 import { steps } from "./constants/steps.js";
-
+import { getAdbPath, validateAdb, getConnectedDevices } from "./adb.js";
 
 const server = new McpServer({
   name: "appsflyer-logcat-mcp-server",
@@ -33,7 +33,6 @@ server.tool(
     };
   }
 );
-
 
 server.tool(
   "testAppsFlyerSdk",
@@ -66,22 +65,78 @@ server.tool(
 
 server.tool(
   "fetchAppsflyerLogs",
-  { lineCount: z.number().default(100) },
+  {
+    lineCount: z.number().default(100),
+    deviceId: z.string().optional(),
+  },
   {
     description: descriptions.fetchAppsflyerLogs,
     intent: intents.fetchAppsflyerLogs,
     keywords: keywords.fetchAppsflyerLogs,
   },
-  async ({ lineCount }) => {
-    startLogcatStream("AppsFlyer_6.14.0");
-    let waited = 0;
-    while (logBuffer.length === 0 && waited < 2000) {
-      await new Promise(res => setTimeout(res, 200));
-      waited += 200;
+  async ({ lineCount, deviceId }) => {
+    try {
+      const adbPath = getAdbPath();
+      validateAdb(adbPath);
+      const devices = getConnectedDevices(adbPath);
+
+      if (devices.length === 0) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: "No Android devices are currently connected via ADB.",
+            },
+          ],
+        };
+      }
+
+      if (!deviceId) {
+        if (devices.length > 1) {
+          return {
+            content: [
+              {
+                type: "text",
+                text:
+                  "Multiple devices are connected. Please select one of the following device IDs:\n" +
+                  devices.map((id: string) => `- ${id}`).join("\n"),
+              },
+            ],
+          };
+        }
+        deviceId = devices[0]; // Only one device connected
+      }
+
+      await startLogcatStream("AppsFlyer_6.14.0", deviceId);
+
+      let waited = 0;
+      while (logBuffer.length === 0 && waited < 2000) {
+        await new Promise((res) => setTimeout(res, 200));
+        waited += 200;
+      }
+
+      const logs = getRecentLogs(lineCount);
+      stopLogcatStream();
+
+      return {
+        content: [
+          {
+            type: "text",
+            text: logs || "[No AppsFlyer logs found in the last few seconds.]",
+          },
+        ],
+      };
+    } catch (err: any) {
+      stopLogcatStream(); // Ensure stream is stopped on failure
+      return {
+        content: [
+          {
+            type: "text",
+            text: `[Error fetching logs] ${err.message || err}`,
+          },
+        ],
+      };
     }
-    return {
-      content: [{ type: "text", text: getRecentLogs(lineCount) }],
-    };
   }
 );
 
@@ -113,7 +168,6 @@ function createLogTool(
   );
 }
 
-
 createLogTool("getConversionLogs", "CONVERSION-");
 createLogTool("getInAppLogs", "INAPP-");
 createLogTool("getLaunchLogs", "LAUNCH-");
@@ -129,7 +183,9 @@ server.tool(
   },
   async ({ lineCount }) => {
     const errorKeywords = keywords.getAppsflyerErrors;
-    const errors = errorKeywords.flatMap(keyword => getParsedAppsflyerFilters(lineCount, keyword));
+    const errors = errorKeywords.flatMap((keyword) =>
+      getParsedAppsflyerFilters(lineCount, keyword)
+    );
     return {
       content: [{ type: "text", text: JSON.stringify(errors, null, 2) }],
     };
