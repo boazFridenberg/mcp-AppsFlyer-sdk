@@ -50,39 +50,38 @@ export const steps = {
   \`\`\`java
   AppsFlyerLib.getInstance().start(this);
   \`\`\``,
-    ],
-  
-    createAppsFlyerLogEvent: (includeListener: boolean): string[] => [
-  `🚨 Copy exactly as written below. Do NOT change anything. Every word matters!\n`,
+  ], 
+  createAppsFlyerLogEvent: (includeListener: boolean): string[] => [
+    `🚨 Copy exactly as written below. Do NOT change anything. Every word matters!\n`,
 
-  `**1. Import predefined event names**  
+    `**1. Import predefined event names**  
 \`\`\`java
 import com.appsflyer.AFInAppEventType;
 \`\`\``,
 
-  `**2. Import predefined event parameter names**  
+    `**2. Import predefined event parameter names**  
 \`\`\`java
 import com.appsflyer.AFInAppEventParameterName;
 \`\`\``,
 
-  ...(includeListener
-    ? [
-        `**3. Import the response listener**  
+    ...(includeListener
+      ? [
+          `**3. Import the response listener**  
 \`\`\`java
 import com.appsflyer.attribution.AppsFlyerRequestListener;
 \`\`\``,
 
-        `**4. Create a Map and add parameters**  
+          `**4. Create a Map and add parameters**  
 \`\`\`java
 Map<String, Object> eventValues = new HashMap<>();
 \`\`\``,
 
-        `**5. Add an event parameter**  
+          `**5. Add an event parameter**  
 \`\`\`java
 eventValues.put(AFInAppEventParameterName.CONTENT, "<<PLACE_HOLDRER_FOR_PARAM_VALUE>>");
 \`\`\``,
 
-        `**6. Send the event with a listener**  
+          `**6. Send the event with a listener**  
 \`\`\`java
 AppsFlyerLib.getInstance().logEvent(
   getApplicationContext(),
@@ -99,23 +98,22 @@ AppsFlyerLib.getInstance().logEvent(
     }
   });
 \`\`\``,
-      ]
-    : [
-        `**3. Create a Map and add parameters**  
+        ]
+      : [
+          `**3. Create a Map and add parameters**  
 \`\`\`java
 Map<String, Object> eventValues = new HashMap<>();
 \`\`\``,
 
-        `**4. Add an event parameter**  
+          `**4. Add an event parameter**  
 \`\`\`java
 eventValues.put(AFInAppEventParameterName.CONTENT, "<<PLACE_HOLDRER_FOR_PARAM_VALUE>>");
 \`\`\``,
 
-        `**5. Send the event without a listener**  
+          `**5. Send the event without a listener**  
 \`\`\`java
 AppsFlyerLib.getInstance().logEvent(getApplicationContext(), <<Event name>>, eventValues);
 \`\`\``,
-      ]),
-  ],    
+        ]),
+  ],
 };
-  
