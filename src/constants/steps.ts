@@ -37,14 +37,21 @@ export const steps = {
   import com.appsflyer.AppsFlyerLib;
   \`\`\``,
   
-      `**5. Initialize the SDK**  
+      `**5. add DebugLog before init**  
+  Inside the \`onCreate()\` method of your \`Application\` class, call:
+  
+  \`\`\`java
+  AppsFlyerLib.getInstance().setDebugLog(true);
+  \`\`\``,
+      
+      `**6. Initialize the SDK**  
   Inside the \`onCreate()\` method of your \`Application\` class, call:
   
   \`\`\`java
   AppsFlyerLib.getInstance().init("<YOUR-DEV-KEY>", null, this);
   \`\`\``,
   
-      `**6. Starting the SDK**  
+      `**7. Starting the SDK**  
   Immediately after \`init()\`, call:
   
   \`\`\`java
@@ -59,9 +66,10 @@ export const steps = {
 import com.appsflyer.AFInAppEventType;
 \`\`\``,
 
-    `**2. Import predefined event parameter names**  
+    `**2. Import predefined event parameter names and Map.**  
 \`\`\`java
 import com.appsflyer.AFInAppEventParameterName;
+import java.util.Map;
 \`\`\``,
 
     ...(includeListener
