@@ -173,6 +173,7 @@ createLogTool("getInAppLogs", "INAPP-");
 createLogTool("getLaunchLogs", "LAUNCH-");
 createLogTool("getDeepLinkLogs", "deepLink");
 
+
 server.tool(
   "getAppsflyerErrors",
   { lineCount: z.number().optional().default(50) },
@@ -221,48 +222,47 @@ server.tool(
 );
 
 server.tool(
-  "autoCheckAppsFlyerIntegration",
-  { lineCount: z.number().optional().default(200) },
+  "testInAppEvent",
   {
-    description: "Automatically checks AppsFlyer integration from device logs (logcat) based on 3-step process.",
-    intent: "Auto-verify AppsFlyer SDK integration via logs",
-    keywords: ["appsFlyer", "integration", "logcat", "auto-check", "debug", "event"],
+    lineCount: z.number().optional().default(100),
+  },
+  {
+    description:
+      "Scans recent logs to verify if the in-app event `af_level_achieved` was successfully logged.",
+    intent: [
+      "When the user wants to check if a specific in-app event was triggered in the logs, call this tool.",
+      "If user asks whether af_level_achieved was logged, use this tool to verify."
+    ],
+    keywords: [
+      "test appsflyer event",
+      "check in-app event log",
+      "af_level_achieved event",
+      "apps flyer log validation",
+      "apps flyer log success",
+      "event log tester"
+    ],
   },
   async ({ lineCount }) => {
-    startLogcatStream("AppsFlyer_6.13.0");
+    const logs = logBuffer;
 
-    // Wait briefly for logs to populate
-    for (let waited = 0; logBuffer.length === 0 && waited < 3000; waited += 300) {
-      await new Promise((r) => setTimeout(r, 300));
-    }
+    const hasEventName = logs.includes('"event": "af_level_achieved"');
+    const hasEventValue = logs.includes('"eventvalue":"{\"af_content\":');
+    const hasEndpoint = logs.includes(
+      "androidevent?app_id=com.appsflyer.onelink.appsflyeronelinkbasicapp"
+    );
 
-    const logs = getRecentLogs(lineCount);
-
-    // Define checks for the 3 steps
-    const checks = [
-      {
-        passed: /setDebugLog\(true\)|\[HTTP Client\]/.test(logs),
-        failMsg: "Step 1 failed: Debug mode not enabled."
-      },
-      {
-        passed: /ADD_PAYMENT_INFO event logged successfully/.test(logs),
-        failMsg: "Step 2 failed: Event not prepared correctly in logs."
-      },
-      {
-        passed: /POST:.*androidevent\?app_id=/.test(logs),
-        failMsg: "Step 3 failed: Event not sent (missing androidevent log)."
-      }
-    ];
-
-    const failures = checks.filter(c => !c.passed).map(c => c.failMsg);
+    const allPresent = hasEventName && hasEventValue && hasEndpoint;
 
     return {
       content: [
         {
           type: "text",
-          text: failures.length
-            ? `❌ AppsFlyer Integration check failed:\n- ${failures.join("\n- ")}`
-            : "✅ All AppsFlyer integration steps passed successfully."
+          text: allPresent
+            ? "✅ Event `af_level_achieved` was successfully logged. All required log entries were found."
+            : `❌ The event may not have been logged correctly. Results:
+- Has Event Name: ${hasEventName}
+- Has Event Value: ${hasEventValue}
+- Has Endpoint: ${hasEndpoint}`,
         },
       ],
     };
