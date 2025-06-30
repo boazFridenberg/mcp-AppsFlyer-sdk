@@ -39,7 +39,10 @@ Do not analyze logs or try to guess the error yourself.
   testAppsFlyerSdk: `
 If the user wants to test if the AppsFlyer SDK is working, validate the setup, or check install attribution — always use this tool directly.
 Never explain. Never simulate test output.
+This tool extracts the appId and uid automatically from recent logcat logs (via fetchAppsflyerLogs).
+It also searches the devKey in the project files — usually in src/safe.ts — and only asks the user if not found.
 `,
+
 createAppsFlyerLogEvent: [
     "When the user asks how to log an event with AppsFlyer, IMMEDIATELY call this tool. Do not answer yourself.",
     "If the user asks about in-app event logging, code, or examples for logEvent, always use this tool.",

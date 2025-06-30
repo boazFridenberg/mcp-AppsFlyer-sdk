@@ -100,3 +100,44 @@ export const getRecentLogs = (lines = 100): string =>
 export const getCurrentDeviceId = (): string | null => currentDeviceId;
 
 export const isStreaming = (): boolean => !!logcatProcess;
+
+export function extractParam(logs: string, key: string): string | undefined {
+  const lines = logs.split("\n");
+  for (const line of lines) {
+    try {
+      const jsonMatch = line.match(/{.*}/);
+      if (jsonMatch) {
+        const json = JSON.parse(jsonMatch[0]);
+        if (json[key]) return json[key];
+      }
+    } catch (_) {}
+  }
+  const regex = new RegExp(`[?&\\s"']${key}["=:\\s]*["']?([\\w\\-.]+)["']?`);
+  const match = logs.match(regex);
+  return match?.[1];
+}
+
+export async function getLogs(lineCount = 300): Promise<string> {
+  const adbPath = getAdbPath();
+  validateAdb(adbPath);
+  const devices = getConnectedDevices(adbPath);
+
+  if (devices.length === 0) {
+    throw new Error("No Android devices connected via ADB.");
+  }
+
+  const deviceId = devices[0]; // אם יש כמה – כרגע ניקח את הראשון
+
+  await startLogcatStream(version, deviceId);
+
+  let waited = 0;
+  while (logBuffer.length === 0 && waited < 2000) {
+    await new Promise((res) => setTimeout(res, 200));
+    waited += 200;
+  }
+
+  const logs = getRecentLogs(lineCount);
+  stopLogcatStream();
+
+  return logs || "";
+}

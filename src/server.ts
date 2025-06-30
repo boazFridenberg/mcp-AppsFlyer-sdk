@@ -1,11 +1,6 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import {
-  startLogcatStream,
-  getRecentLogs,
-  logBuffer,
-  stopLogcatStream,
-} from "./logcat/stream.js";
+import { startLogcatStream, getRecentLogs, logBuffer, stopLogcatStream, extractParam, getLogs } from "./logcat/stream.js";
 import { getParsedAppsflyerFilters } from "./logcat/parse.js";
 import { z } from "zod";
 import { descriptions } from "./constants/descriptions.js";
@@ -14,6 +9,8 @@ import { keywords } from "./constants/keywords.js";
 import { steps } from "./constants/steps.js";
 import { getAdbPath, validateAdb, getConnectedDevices } from "./adb.js";
 import { version } from "./safe.js";
+import fs from "fs";
+import path from "path";
 
 const server = new McpServer({
   name: "appsflyer-logcat-mcp-server",
@@ -43,27 +40,63 @@ server.tool(
 server.tool(
   "testAppsFlyerSdk",
   {
-    appId: z.string(),
-    devKey: z.string(),
-    uid: z.string(),
+    devKey: z.string({
+      required_error: "Please provide your AppsFlyer devKey",
+    }),
   },
   {
     description: descriptions.testAppsFlyerSdk,
     intent: intents.testAppsFlyerSdk,
     keywords: keywords.testAppsFlyerSdk,
   },
-  async ({ appId, devKey, uid }) => {
-    const url = `https://gcdsdk.appsflyer.com/install_data/v4.0/${appId}?devkey=${devKey}&device_id=${uid}`;
-    const options = { method: "GET", headers: { accept: "application/json" } };
+  async ({ devKey }) => {
+    let logsText = "";
     try {
-      const res = await fetch(url, options);
+      logsText = await getLogs(300);
+    } catch (err: any) {
+      return {
+        content: [{ type: "text", text: `❌ Error fetching logs: ${err.message}` }],
+      };
+    }
+
+    const appId = extractParam(logsText, "app_id") || extractParam(logsText, "appId");
+    const uid = extractParam(logsText, "uid") || extractParam(logsText, "device_id");
+
+    if (!appId || !uid) {
+      return {
+        content: [
+          {
+            type: "text",
+            text: `❌ Failed to extract app_id or uid from logs.\napp_id: ${appId}\nuid: ${uid}`,
+          },
+        ],
+      };
+    }
+
+    const url = `https://gcdsdk.appsflyer.com/install_data/v4.0/${appId}?devkey=${devKey}&device_id=${uid}`;
+
+    try {
+      const res = await fetch(url, {
+        method: "GET",
+        headers: { accept: "application/json" },
+      });
       const json = await res.json();
       return {
-        content: [{ type: "text", text: JSON.stringify(json, null, 2) }],
+        content: [
+          {
+            type: "text",
+            text: `✅ SDK Test Succeeded:\n\n${JSON.stringify(json, null, 2)}`,
+          },
+        ],
       };
-    } catch (err) {
+    } catch (err: any) {
       return {
-        content: [{ type: "text", text: `Error: ${(err as Error).message}` }],
+        content: [
+          {
+            type: "text",
+            text: `❌ Error fetching SDK data: ${err.message}`,
+          },
+        ],
       };
     }
   }
