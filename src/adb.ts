@@ -12,9 +12,24 @@ export function getAdbPath(): string {
 
   let adbPath;
   if (platform === "win32") {
-    adbPath = path.join(home, "AppData", "Local", "Android", "Sdk", "platform-tools", "adb.exe");
+    adbPath = path.join(
+      home,
+      "AppData",
+      "Local",
+      "Android",
+      "Sdk",
+      "platform-tools",
+      "adb.exe"
+    );
   } else if (platform === "darwin") {
-    adbPath = path.join(home, "Library", "Android", "sdk", "platform-tools", "adb");
+    adbPath = path.join(
+      home,
+      "Library",
+      "Android",
+      "sdk",
+      "platform-tools",
+      "adb"
+    );
   } else if (platform === "linux") {
     adbPath = path.join(home, "Android", "Sdk", "platform-tools", "adb");
   } else {
@@ -52,12 +67,16 @@ export function getConnectedDevices(adbPath: string): string[] {
     const output = execFileSync(adbPath, ["devices"], { encoding: "utf8" });
     const lines = output.split("\n").slice(1); // Skip the header line
     const devices = lines
-      .map(line => line.trim())
-      .filter(line => line && line.includes("device") && !line.includes("offline"))
-      .map(line => line.split("\t")[0]);
+      .map((line) => line.trim())
+      .filter(
+        (line) => line && line.includes("device") && !line.includes("offline")
+      )
+      .map((line) => line.split("\t")[0]);
     return devices;
   } catch (err: any) {
-    const msg = `[ADB] Failed to retrieve connected devices: ${err.message || err}`;
+    const msg = `[ADB] Failed to retrieve connected devices: ${
+      err.message || err
+    }`;
     console.error(msg);
     throw new Error(msg);
   }

@@ -1,6 +1,11 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { startLogcatStream, getRecentLogs, logBuffer, stopLogcatStream,} from "./logcat/stream.js";
+import {
+  startLogcatStream,
+  getRecentLogs,
+  logBuffer,
+  stopLogcatStream,
+} from "./logcat/stream.js";
 import { getParsedAppsflyerFilters } from "./logcat/parse.js";
 import { z } from "zod";
 import { descriptions } from "./constants/descriptions.js";
@@ -8,6 +13,7 @@ import { intents } from "./constants/intents.js";
 import { keywords } from "./constants/keywords.js";
 import { steps } from "./constants/steps.js";
 import { getAdbPath, validateAdb, getConnectedDevices } from "./adb.js";
+import { version } from "./safe.js";
 
 const server = new McpServer({
   name: "appsflyer-logcat-mcp-server",
@@ -107,7 +113,7 @@ server.tool(
         deviceId = devices[0]; // Only one device connected
       }
 
-      await startLogcatStream("AppsFlyer_6.14.0", deviceId);
+      await startLogcatStream(version, deviceId);
 
       let waited = 0;
       while (logBuffer.length === 0 && waited < 2000) {
@@ -173,7 +179,6 @@ createLogTool("getInAppLogs", "INAPP-");
 createLogTool("getLaunchLogs", "LAUNCH-");
 createLogTool("getDeepLinkLogs", "deepLink");
 
-
 server.tool(
   "getAppsflyerErrors",
   { lineCount: z.number().optional().default(50) },
@@ -192,7 +197,6 @@ server.tool(
     };
   }
 );
-
 
 server.tool(
   "createAppsFlyerLogEvent",
@@ -231,7 +235,7 @@ server.tool(
       "Scans recent logs to verify if the in-app event `af_level_achieved` was successfully logged.",
     intent: [
       "When the user wants to check if a specific in-app event was triggered in the logs, call this tool.",
-      "If user asks whether af_level_achieved was logged, use this tool to verify."
+      "If user asks whether af_level_achieved was logged, use this tool to verify.",
     ],
     keywords: [
       "test appsflyer event",
@@ -239,14 +243,14 @@ server.tool(
       "af_level_achieved event",
       "apps flyer log validation",
       "apps flyer log success",
-      "event log tester"
+      "event log tester",
     ],
   },
   async ({ lineCount }) => {
     const logs = logBuffer;
 
     const hasEventName = logs.includes('"event": "af_level_achieved"');
-    const hasEventValue = logs.includes('"eventvalue":"{\"af_content\":');
+    const hasEventValue = logs.includes('"eventvalue":"{"af_content":');
     const hasEndpoint = logs.includes(
       "androidevent?app_id=com.appsflyer.onelink.appsflyeronelinkbasicapp"
     );
