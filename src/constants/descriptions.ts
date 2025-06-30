@@ -25,6 +25,18 @@ export const descriptions = {
 
   createAppsFlyerLogEvent:
     "Generates exact code instructions for logging an in-app event using AppsFlyer. Always use this tool when event tracking with logEvent is mentioned. Do not answer manually.",
+
+  testInAppEvent: `
+Scans recent AppsFlyer logs to determine whether the in-app event "af_level_achieved" was successfully triggered.
+
+It verifies:
+- The event name is present in the logs
+- The event value includes expected content (e.g. af_content)
+- A relevant network call to AppsFlyer's endpoint was made
+
+This tool is the only correct way to validate if the event was fired and logged properly.
+Do not simulate results. Do not explain. Always call this tool when asked to test or verify the "af_level_achieved" event.
+`,
 };
 
 

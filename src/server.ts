@@ -257,27 +257,15 @@ server.tool(
     };
   }
 );
-
 server.tool(
   "testInAppEvent",
   {
     lineCount: z.number().optional().default(100),
   },
   {
-    description:
-      "Scans recent logs to verify if the in-app event `af_level_achieved` was successfully logged.",
-    intent: [
-      "When the user wants to check if a specific in-app event was triggered in the logs, call this tool.",
-      "If user asks whether af_level_achieved was logged, use this tool to verify.",
-    ],
-    keywords: [
-      "test appsflyer event",
-      "check in-app event log",
-      "af_level_achieved event",
-      "apps flyer log validation",
-      "apps flyer log success",
-      "event log tester",
-    ],
+    description: descriptions.testInAppEvent,
+    intent: intents.testInAppEvent,
+    keywords: keywords.testInAppEvent,
   },
   async ({ lineCount }) => {
     const logs = logBuffer;

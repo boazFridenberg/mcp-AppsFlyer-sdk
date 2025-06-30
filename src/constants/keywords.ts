@@ -82,7 +82,20 @@ export const keywords = {
     "שליחת אירוע appsflyer",
     "אירועים sdk",
     "track in-app"
-  ]
+  ],
+
+  testInAppEvent: [
+  "af_level_achieved",
+  "check if af_level_achieved was logged",
+  "was af_level_achieved triggered",
+  "test in-app event",
+  "apps flyer in-app event",
+  "af_level_achieved validation",
+  "verify appsflyer event",
+  "apps flyer log test event",
+  "event af_level_achieved",
+  "check af_level_achieved"
+]
   };
   
   
