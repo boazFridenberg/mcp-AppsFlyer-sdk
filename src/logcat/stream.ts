@@ -1,6 +1,5 @@
 import { spawn, ChildProcessWithoutNullStreams } from "child_process";
 import { getAdbPath, validateAdb, getConnectedDevices } from "../adb.js";
-import { version } from "../safe.js";
 
 const MAX_LINES = 5000;
 const MAX_RESTARTS = 5;
@@ -12,7 +11,7 @@ let restartAttempts = 0;
 let currentDeviceId: string | null = null;
 
 export async function startLogcatStream(
-  filterTag = version,
+  filterTag = "AppsFlyer_",
   deviceIdParam?: string
 ): Promise<void> {
   const adbPath = getAdbPath();
@@ -128,7 +127,7 @@ export async function getLogs(lineCount = 300): Promise<string> {
 
   const deviceId = devices[0]; // אם יש כמה – כרגע ניקח את הראשון
 
-  await startLogcatStream(version, deviceId);
+  await startLogcatStream("AppsFlyer_", deviceId);
 
   let waited = 0;
   while (logBuffer.length === 0 && waited < 2000) {

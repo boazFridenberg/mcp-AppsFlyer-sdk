@@ -8,7 +8,6 @@ import { intents } from "./constants/intents.js";
 import { keywords } from "./constants/keywords.js";
 import { steps } from "./constants/steps.js";
 import { getAdbPath, validateAdb, getConnectedDevices } from "./adb.js";
-import { version } from "./safe.js";
 import fs from "fs";
 import path from "path";
 
@@ -146,7 +145,7 @@ server.tool(
         deviceId = devices[0]; // Only one device connected
       }
 
-      await startLogcatStream(version, deviceId);
+      await startLogcatStream("AppsFlyer_", deviceId);
 
       let waited = 0;
       while (logBuffer.length === 0 && waited < 2000) {
