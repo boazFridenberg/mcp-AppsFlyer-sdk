@@ -268,172 +268,129 @@ server.tool(
     };
   }
 );
-
 server.tool(
-  "oneLinkSetupInstructions",
-  {},
+  "createAppFlyerDeepLink",
   {
-    description: "Step-by-step guide to create and test a OneLink for deep linking and user acquisition",
-    intent: "Provide instructions for setting up and testing OneLink",
+    request: z.string().describe("Natural language request describing the deep link to create"),
+    appId: z.string().describe("AppsFlyer App ID"),
+    devKey: z.string().describe("AppsFlyer Dev Key"),
+    uid: z.string().describe("Device ID (UID) to check"),
+  },
+  {
+    description: "Generates step-by-step instructions to create and test an AppsFlyer OneLink deep link based on a natural language input.",
+    intent: "Provide detailed setup and testing instructions for AppsFlyer OneLink deep linking based on user input.",
     keywords: [
       "onelink",
-      "one link",
-      "create onelink",
-      "how to create onelink",
       "deep link setup",
-      "appsFlyer link",
-      "deeplink guide",
-      "onelink steps",
-      "configure onelink",
-      "שלבים ל-onelink",
-      "איך לעשות onelink",
-      "איך לבדוק דיפ לינק",
+      "appsFlyer",
+      "deep link creation",
+      "instructions",
+      "deeplink listener",
+      "android app links",
     ],
   },
-  async () => {
+  async ({ request, appId, devKey, uid }) => {
     const steps = [
-      "🧱 **Step 1: Create a OneLink template in AppsFlyer**",
-      "- Go to your app in the [AppsFlyer dashboard](https://dashboard.appsflyer.com)",
-      "- Click on 'OneLink Templates' and create a new template",
-      "- Choose your app(s) and name the template",
-      "",
+      `### 📋 Your Request:\n"${request}"\n`,
+      `### 🧱 Step 1: Create a OneLink Template in AppsFlyer\n` +
+      `- Log in to the [AppsFlyer Dashboard](https://dashboard.appsflyer.com)\n` +
+      `- Navigate to "OneLink Templates" and click "Create New Template"\n` +
+      `- Select your app(s) and give the template a meaningful name\n`,
+      
+      `### 🔗 Step 2: Create a OneLink URL with Custom Parameters\n` +
+      `- Inside your OneLink Template, click "Create OneLink URL"\n` +
+      `- Set redirect targets (Google Play Store and/or Apple App Store)\n` +
+      `- Add deep link parameters based on your request (e.g., productId=123, campaign=summer)\n` +
+      `- Save and copy the generated OneLink URL\n`,
 
-      "🔗 **Step 2: Create a OneLink URL with parameters**",
-      "- After creating the template, click 'Create OneLink URL'",
-      "- Choose the desired redirection options (e.g., to Google Play or App Store)",
-      "- Add parameters like:",
-      "  - `deep_link_value=products`",
-      "  - `af_sub1=campaign1`",
-      "- Final URL might look like:",
-      "  https://yourbrand.onelink.me/abc123?deep_link_value=products&af_sub1=campaign1",
-      "",
+      `### 📱 Step 3: Integrate Deep Link Handling in Your Android App\n` +
+      `- Add the AppsFlyer SDK dependency in your Gradle build file:\n` +
+      "```gradle\nimplementation 'com.appsflyer:af-android-sdk:6.+'\n```\n" +
+      `- Import necessary classes in your main Activity:\n` +
+      "```java\n" +
+      "import com.appsflyer.deeplink.DeepLink;\n" +
+      "import com.appsflyer.deeplink.DeepLinkListener;\n" +
+      "import com.appsflyer.deeplink.DeepLinkResult;\n" +
+      "```\n" +
+      `- Initialize AppsFlyer and set your branded OneLink domain:\n` +
+      "```java\n" +
+      "AppsFlyerLib.getInstance().setOneLinkCustomDomain(\"yourbrand.onelink.me\");\n" +
+      "```\n" +
+      `- Subscribe for deep link events in your Activity:\n` +
+      "```java\n" +
+      "appsflyer.subscribeForDeepLink(new DeepLinkListener() {\n" +
+      "    @Override\n" +
+      "    public void onDeepLinking(@NonNull DeepLinkResult deepLinkResult) {\n" +
+      "        DeepLinkResult.Status status = deepLinkResult.getStatus();\n" +
+      "        if (status == DeepLinkResult.Status.NOT_FOUND) {\n" +
+      "            Log.d(LOG_TAG, \"Deep link not found\");\n" +
+      "            return;\n" +
+      "        } else if (status == DeepLinkResult.Status.ERROR) {\n" +
+      "            Log.d(LOG_TAG, \"Error getting Deep Link: \" + deepLinkResult.getError().toString());\n" +
+      "            return;\n" +
+      "        }\n" +
+      "        DeepLink deepLink = deepLinkResult.getDeepLink();\n" +
+      "        if (deepLink != null) {\n" +
+      "            Log.d(LOG_TAG, \"DeepLink data: \" + deepLink.toString());\n" +
+      "            String value = deepLink.getDeepLinkValue();\n" +
+      "            if (deepLink.isDeferred()) {\n" +
+      "                // Handle deferred deep link\n" +
+      "            } else {\n" +
+      "                // Handle direct deep link\n" +
+      "            }\n" +
+      "        }\n" +
+      "    }\n" +
+      "});\n" +
+      "```\n" +
+      `**Apply:** Copy this code into your main Activity and replace \`yourbrand.onelink.me\` with your actual OneLink domain.\n`,
 
-      "📱 **Step 3: Handle the deep link in your app**",
-      "- Integrate the AppsFlyer SDK in your app",
-      "- Add `subscribeForDeepLink()` in your `onCreate()` method to receive the deep link",
-      "- Parse `deepLinkValue` to route the user",
-      "",
+      `### 📦 Step 4: Update AndroidManifest.xml for Deep Linking\n` +
+      `- Add the following intent filter inside your MainActivity:\n` +
+      "```xml\n" +
+      "<intent-filter android:autoVerify=\"true\">\n" +
+      "  <action android:name=\"android.intent.action.VIEW\" />\n" +
+      "  <category android:name=\"android.intent.category.DEFAULT\" />\n" +
+      "  <category android:name=\"android.intent.category.BROWSABLE\" />\n" +
+      "  <data android:scheme=\"https\" android:host=\"yourbrand.onelink.me\" />\n" +
+      "</intent-filter>\n" +
+      "```\n" +
+      `- Optionally, add custom URI scheme if your app uses it:\n` +
+      "```xml\n" +
+      "<intent-filter>\n" +
+      "  <action android:name=\"android.intent.action.VIEW\" />\n" +
+      "  <category android:name=\"android.intent.category.DEFAULT\" />\n" +
+      "  <category android:name=\"android.intent.category.BROWSABLE\" />\n" +
+      "  <data android:scheme=\"yourappscheme\" android:host=\"yourhost\" />\n" +
+      "</intent-filter>\n" +
+      "```\n" +
+      `**Apply:** Update your \`AndroidManifest.xml\` accordingly.\n`,
 
-      "📦 **Step 4: Add intent-filter in AndroidManifest.xml**",
-      "- In your `MainActivity`, add an intent-filter with:",
-      "  - `android.intent.action.VIEW`",
-      "  - `https` scheme and your OneLink domain",
-      "- Example:",
-      "```xml",
-      "<intent-filter>",
-      "  <action android:name=\"android.intent.action.VIEW\" />",
-      "  <category android:name=\"android.intent.category.DEFAULT\" />",
-      "  <category android:name=\"android.intent.category.BROWSABLE\" />",
-      "  <data android:scheme=\"https\" android:host=\"yourbrand.onelink.me\" />",
-      "</intent-filter>",
-      "```",
-      "",
+      `### 🔐 Step 5: Generate SHA256 Fingerprint for App Links\n` +
+      `1. Locate your app's keystore file (debug or release)\n` +
+      `2. Run this command to get the SHA256 fingerprint:\n` +
+      "```bash\n" +
+      "keytool -list -v -keystore ~/.android/debug.keystore\n" +
+      "```\n" +
+      `3. Copy the SHA256 fingerprint line\n` +
+      `4. Provide this fingerprint to your marketing or AppsFlyer team to add to your OneLink template\n` +
+      `**This step is required for Android App Links verification.**\n`,
 
-      "🧪 **Step 5: Test deferred deep linking**",
-      "- Uninstall the app from your device",
-      "- Open the OneLink URL (from WhatsApp, browser, etc)",
-      "- Install the app from the Play Store/App Store",
-      "- Open the app and verify that the SDK receives the deep link",
-      "",
-
-      "✅ **Optional: Use MCP tools like getDeepLinkData to verify**",
-      "- You can use the UID and Dev Key to fetch deep link info",
-      "- Helps confirm that AppsFlyer received and recognized the click",
+      `### 📤 Final Step: Test Your Deep Link\n` +
+      `- Open the OneLink URL on your device with the app installed\n` +
+      `- Verify the deep link data is received and handled correctly\n` +
+      `- For deferred deep linking, uninstall the app, open the OneLink URL, install the app, and verify the deep link data is delivered\n` +
+      `\n` +
+      `**Apply:** Test thoroughly on multiple devices and OS versions.\n`,
     ];
 
     return {
       content: [
         {
           type: "text",
-          text: steps.join("\n"),
+          text: steps.join("\n\n---\n\n"),
         },
       ],
     };
   }
 );
 
-
-server.tool(
-  "getDeepLinkData",
-  {
-    appId: z.string().describe("AppsFlyer App ID"),
-    devKey: z.string().describe("AppsFlyer Dev Key"),
-    uid: z.string().describe("Device ID (UID) to check"),
-  },
-  {
-    description: "Fetches AppsFlyer deep link data for a specific device ID",
-    intent: "Fetch deep link data from AppsFlyer",
-    keywords: [
-      "deep link",
-      "deeplink",
-      "get deep link",
-      "appsFlyer link",
-      "onelink",
-      "fetch link",
-      "device link",
-      "device deep link",
-      "deep link data",
-      "deferred deep link",
-    ],
-  },
-  async ({ appId, devKey, uid }) => {
-    const url = `https://gcdsdk.appsflyer.com/deep_link/v1/${appId}`;
-    const body = {
-      af_devkey: devKey,
-      af_user_id: uid,
-    };
-
-    try {
-      const res = await fetch(url, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          accept: "application/json",
-        },
-        body: JSON.stringify(body),
-      });
-
-      const json = (await res.json()) as any;
-      const isEmpty = !json.deep_link || Object.keys(json.deep_link).length === 0;
-
-      if (isEmpty) {
-        return {
-          content: [
-            {
-              type: "text",
-              text: `⚠️ There are currently no deep link entries for this device (UID: ${uid}).\n\n` +
-                `✅ To test a deferred deep link:\n` +
-                `1. Send a OneLink with parameters like ?deep_link_value=test\n` +
-                `2. Uninstall the app from your device\n` +
-                `3. Click the OneLink and install the app from Play Store\n` +
-                `4. Open the app and make sure the SDK is initialized properly\n` +
-                `5. Try this tool again after app open\n\nNeed help? Ask me!`,
-            },
-          ],
-        };
-      }
-
-      return {
-        content: [
-          {
-            type: "text",
-            text: "📦 Deep link response:\n\n" + JSON.stringify(json, null, 2),
-          },
-        ],
-      };
-    } catch (err) {
-      return {
-        content: [
-          {
-            type: "text",
-            text: `❌ Error fetching deep link data: ${(err as Error).message}`,
-          },
-        ],
-      };
-    }
-  }
-);
-
-const transport = new StdioServerTransport();
-await server.connect(transport);
-console.log("MCP server running with stdio transport...");
