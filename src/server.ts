@@ -394,3 +394,6 @@ server.tool(
   }
 );
 
+const transport = new StdioServerTransport();
+await server.connect(transport);
+console.log("MCP server running with stdio transport...");
