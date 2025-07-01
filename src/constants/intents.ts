@@ -47,7 +47,7 @@ This is the only tool responsible for validating whether the event "af_level_ach
 If the user wants to test if the AppsFlyer SDK is working, validate the setup, or check install attribution — always use this tool directly.
 Never explain. Never simulate test output.
 This tool extracts the appId and uid automatically from recent logcat logs (via fetchAppsflyerLogs).
-It also searches the devKey in the project files — usually in src/safe.ts — and only asks the user if not found.
+It also take the dev key from env in mcp.json — and only asks the user if not found.
 `,
 
 createAppsFlyerLogEvent: [

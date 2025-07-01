@@ -35,31 +35,42 @@ server.tool(
     };
   }
 );
-
 server.tool(
   "testAppsFlyerSdk",
-  {
-    devKey: z.string({
-      required_error: "Please provide your AppsFlyer devKey",
-    }),
-  },
+  {}, // אין פרמטרים
   {
     description: descriptions.testAppsFlyerSdk,
     intent: intents.testAppsFlyerSdk,
     keywords: keywords.testAppsFlyerSdk,
   },
-  async ({ devKey }) => {
+  async () => {
+    const devKey = process.env.DEV_KEY;
+    if (!devKey) {
+      return {
+        content: [
+          {
+            type: "text",
+            text: `❌ DevKey environment variable (DEV_KEY) not set.`,
+          },
+        ],
+      };
+    }
+
     let logsText = "";
     try {
       logsText = await getLogs(500);
     } catch (err: any) {
       return {
-        content: [{ type: "text", text: `❌ Error fetching logs: ${err.message}` }],
+        content: [
+          { type: "text", text: `❌ Error fetching logs: ${err.message}` },
+        ],
       };
     }
 
-    const appId = extractParam(logsText, "app_id") || extractParam(logsText, "appId");
-    const uid = extractParam(logsText, "uid") || extractParam(logsText, "device_id");
+    const appId =
+      extractParam(logsText, "app_id") || extractParam(logsText, "appId");
+    const uid =
+      extractParam(logsText, "uid") || extractParam(logsText, "device_id");
 
     if (!appId || !uid) {
       return {

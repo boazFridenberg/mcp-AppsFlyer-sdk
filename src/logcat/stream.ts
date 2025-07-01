@@ -11,7 +11,7 @@ let restartAttempts = 0;
 let currentDeviceId: string | null = null;
 
 export async function startLogcatStream(
-  filterTag = "AppsFlyer_",
+  filterTag = "AppsFlyer_", // נשאיר את הפרמטר למקרה שתרצה בעתיד
   deviceIdParam?: string
 ): Promise<void> {
   const adbPath = getAdbPath();
@@ -34,14 +34,7 @@ export async function startLogcatStream(
     stopLogcatStream();
     console.warn(`[Logcat] Switching to device: ${deviceId}`);
   }
-
-  logcatProcess = spawn(adbPath, [
-    "-s",
-    deviceId,
-    "logcat",
-    `${filterTag}:V`,
-    "*:S",
-  ]);
+  logcatProcess = spawn(adbPath, ["-s", deviceId, "logcat"]);
   logcatProcess.stdout.setEncoding("utf8");
   currentDeviceId = deviceId;
 
@@ -49,7 +42,11 @@ export async function startLogcatStream(
     const lines = data
       .split("\n")
       .map((line) => line.trim())
-      .filter(Boolean);
+      .filter(Boolean)
+      .filter((line) => line.includes("AppsFlyer_"));
+
+    if (lines.length === 0) return;
+
     logBuffer.push(...lines);
     if (logBuffer.length > MAX_LINES)
       logBuffer.splice(0, logBuffer.length - MAX_LINES);
@@ -79,6 +76,7 @@ export async function startLogcatStream(
 
   restartAttempts = 0;
 }
+
 
 export function stopLogcatStream(): void {
   if (!logcatProcess) return console.warn("[Logcat] No active stream.");
