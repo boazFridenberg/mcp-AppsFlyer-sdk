@@ -52,7 +52,7 @@ server.tool(
   async ({ devKey }) => {
     let logsText = "";
     try {
-      logsText = await getLogs(300);
+      logsText = await getLogs(500);
     } catch (err: any) {
       return {
         content: [{ type: "text", text: `❌ Error fetching logs: ${err.message}` }],
@@ -105,7 +105,7 @@ server.tool(
 server.tool(
   "fetchAppsflyerLogs",
   {
-    lineCount: z.number().default(100),
+    lineCount: z.number().default(500),
     deviceId: z.string().optional(),
   },
   {
