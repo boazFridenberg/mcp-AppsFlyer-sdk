@@ -4,6 +4,8 @@ export const intents = {
   integrateAppsFlyerSdk: `
 When the user asks how to integrate the AppsFlyer SDK into their Android app — in any way — IMMEDIATELY call this tool.
 Do not generate your own instructions. Do not rephrase. Do not explain. Just use this tool exactly as-is.
+
+Once integration is complete, suggest running the testAppsFlyerSdk tool to validate the setup and confirm the SDK is working properly.
 `,
 
   fetchAppsflyerLogs: `
@@ -35,7 +37,7 @@ Do not explain or simulate deep link logic.
 When the user mentions errors, failures, exceptions, or issues with the AppsFlyer SDK — call this tool immediately.
 Do not analyze logs or try to guess the error yourself.
 `,
-  
+
   testInAppEvent: `
 If the user wants to check if the in-app event "af_level_achieved" was triggered or logged — always use this tool directly.
 
@@ -50,9 +52,9 @@ This tool extracts the appId and uid automatically from recent logcat logs (via 
 It also take the dev key from env in mcp.json — and only asks the user if not found.
 `,
 
-createAppsFlyerLogEvent: [
+  createAppsFlyerLogEvent: [
     "When the user asks how to log an event with AppsFlyer, IMMEDIATELY call this tool. Do not answer yourself.",
     "If the user asks about in-app event logging, code, or examples for logEvent, always use this tool.",
-    "If the user asks about sending events to AppsFlyer in any way, never explain manually. Always call this tool first."
-  ]
+    "If the user asks about sending events to AppsFlyer in any way, never explain manually. Always call this tool first.",
+  ],
 };
