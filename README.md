@@ -97,7 +97,7 @@ The server exposes the following tools (commands):
 | `getDeepLinkLogs`          | Extracts deep link-related logs from logcat.                                                 |
 | `getAppsflyerErrors`       | Scans logcat for common AppsFlyer errors and exceptions.                                     |
 | `createAppsFlyerLogEvent`  | Generates code instructions for logging an in-app event with AppsFlyer.                      |
-| `testInAppEvent`           | Validates if the in-app event `af_level_achieved` was successfully triggered and logged.     |
+| `testInAppEvent`           | Validates if the in-app event was successfully triggered and logged.     |
 
 #### Example Flows
 - **Integrate the SDK:** Ask your IDE "How do I integrate AppsFlyer SDK?" and follow the generated steps.
