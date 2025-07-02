@@ -63,7 +63,11 @@ Add the following to your `mcp.json` (in your IDE, e.g., Copilot/ Cursor):
 "AppsFlyer-mcp": {
   "command": "node",
   "args": ["ABSOLUTE/PATH/mcp-AppsFlyer-sdk/dist/server.js"],
-  "cwd": "."
+  "cwd": ".",
+  "env": {
+          "DEV_KEY": "YOUR-DEV-KEY"
+      }
+
 }
 ```
 Replace `ABSOLUTE/PATH` with the absolute path to your project directory.
