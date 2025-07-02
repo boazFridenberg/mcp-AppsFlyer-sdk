@@ -1,9 +1,12 @@
 {
-    "name": "appsflyer-logcat-server",
-    "version": "1.0.0",
+    "name": "@appsflyer/sdk-mcp-server",
+    "version": "1.0.8",
     "type": "module",
-    "description": "Node.js server to stream, parse and expose AppsFlyer logcat logs using MCP",
+    "description": "Node.js MCP server for AppsFlyer SDK integration",
     "main": "dist/server.js",
+    "bin": {
+        "sdk-mcp-server": "./dist/server.js"
+    },
     "scripts": {
         "build": "tsc",
         "start": "node dist/server.js",
@@ -12,6 +15,7 @@
     "author": "Your Name",
     "license": "MIT",
     "dependencies": {
+        "@appsflyer/sdk-mcp-server": "^1.0.7",
         "@kubb/core": "^3.12.1",
         "@modelcontextprotocol/sdk": "^1.0.0",
         "zod": "^3.25.67"
