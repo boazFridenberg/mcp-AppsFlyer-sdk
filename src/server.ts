@@ -10,8 +10,6 @@ import { intents } from "./constants/intents.js";
 import { keywords } from "./constants/keywords.js";
 import { steps } from "./constants/steps.js";
 import { getAdbPath, validateAdb, getConnectedDevices } from "./adb.js";
-import fs from "fs";
-import path from "path";
 
 const server = new McpServer({
   name: "appsflyer-logcat-mcp-server",
@@ -117,7 +115,6 @@ server.tool(
 server.tool(
   "fetchAppsflyerLogs",
   {
-    lineCount: z.number().default(500),
     deviceId: z.string().optional(),
   },
   {
@@ -125,7 +122,7 @@ server.tool(
     intent: intents.fetchAppsflyerLogs,
     keywords: keywords.fetchAppsflyerLogs,
   },
-  async ({ lineCount, deviceId }) => {
+  async ({ deviceId }) => {
     try {
       const adbPath = getAdbPath();
       validateAdb(adbPath);
@@ -166,7 +163,7 @@ server.tool(
         waited += 200;
       }
 
-      const logs = getRecentLogs(lineCount);
+      const logs = getRecentLogs();
       stopLogcatStream();
 
       return {
@@ -197,14 +194,14 @@ function createLogTool(
 ): void {
   server.tool(
     toolName,
-    { lineCount: z.number().optional().default(50) },
+    {},
     {
       description: descriptions[toolName],
       intent: intents[toolName],
       keywords: keywords[toolName],
     },
     async ({ lineCount }: { lineCount: number }) => {
-      const logs = getParsedAppsflyerFilters(lineCount, keyword);
+      const logs = getParsedAppsflyerFilters(keyword);
       return {
         content: [
           {
@@ -226,16 +223,16 @@ createLogTool("getDeepLinkLogs", "deepLink");
 
 server.tool(
   "getAppsflyerErrors",
-  { lineCount: z.number().optional().default(50) },
+  {},
   {
     description: descriptions.getAppsflyerErrors,
     intent: intents.getAppsflyerErrors,
     keywords: keywords.getAppsflyerErrors,
   },
-  async ({ lineCount }) => {
+  async ({ }) => {
     const errorKeywords = keywords.getAppsflyerErrors;
     const errors = errorKeywords.flatMap((keyword) =>
-      getParsedAppsflyerFilters(lineCount, keyword)
+      getParsedAppsflyerFilters(keyword)
     );
     return {
       content: [{ type: "text", text: JSON.stringify(errors, null, 2) }],
@@ -271,15 +268,13 @@ server.tool(
 );
 server.tool(
   "testInAppEvent",
-  {
-    lineCount: z.number().optional().default(100),
-  },
+  {},
   {
     description: descriptions.testInAppEvent,
     intent: intents.testInAppEvent,
     keywords: keywords.testInAppEvent,
   },
-  async ({ lineCount }) => {
+  async ({ }) => {
     const logs = logBuffer;
 
     const hasEventName = logs.includes('"event": "af_level_achieved"');
