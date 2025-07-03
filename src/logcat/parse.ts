@@ -7,6 +7,7 @@ export interface ParsedLog {
 }
 
 export function extractJsonFromLine(line: string): Record<string, any> | null {
+  if (!line) return null;
   const match = line.match(/{.*}/s);
   if (!match) return null;
 
@@ -17,7 +18,7 @@ export function extractJsonFromLine(line: string): Record<string, any> | null {
   }
 }
  
-export function getParsedAppsflyerFilters(lineCount: number, keyword: string): ParsedLog[] {
+export function getParsedAppsflyerFilters(lineCount = 700, keyword: string): ParsedLog[] {
   const lines = logBuffer.filter(
     line => line.includes("AppsFlyer") && line.includes(keyword)
   );
