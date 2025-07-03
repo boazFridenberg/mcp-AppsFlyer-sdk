@@ -194,7 +194,7 @@ function createLogTool(
 ): void {
   server.tool(
     toolName,
-    {},
+    { lineCount: z.number().optional().default(50) },
     {
       description: descriptions[toolName],
       intent: intents[toolName],
@@ -202,6 +202,47 @@ function createLogTool(
     },
     async ({ lineCount }: { lineCount: number }) => {
       const logs = getParsedAppsflyerFilters(keyword);
+
+      if (keyword === "CONVERSION-") {
+        if (!logs.length) {
+          return {
+            content: [
+              {
+                type: "text",
+                text: "No conversion log entry found.",
+              },
+            ],
+          };
+        }
+
+        const latestLog = logs[logs.length - 1];
+        const desiredKeys = [
+          "af_timestamp",
+          "uid",
+          "installDate",
+          "firstLaunchDate",
+          "advertiserId",
+          "advertiserIdEnabled",
+          "onelink_id",
+        ];
+
+        const filtered = Object.fromEntries(
+          desiredKeys
+            .filter((key) => key in latestLog.json)
+            .map((key) => [key, latestLog.json[key]])
+        );
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(filtered, null, 2),
+            },
+          ],
+        };
+      }
+
+      // default behavior for other keywords
       return {
         content: [
           {
