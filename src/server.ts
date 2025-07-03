@@ -39,7 +39,7 @@ server.tool(
 );
 server.tool(
   "testAppsFlyerSdk",
-  {}, // אין פרמטרים
+  {}, 
   {
     description: descriptions.testAppsFlyerSdk,
     intent: intents.testAppsFlyerSdk,
@@ -155,7 +155,7 @@ server.tool(
             ],
           };
         }
-        deviceId = devices[0]; // Only one device connected
+        deviceId = devices[0]; 
       }
 
       await startLogcatStream("AppsFlyer_", deviceId);
@@ -178,7 +178,7 @@ server.tool(
         ],
       };
     } catch (err: any) {
-      stopLogcatStream(); // Ensure stream is stopped on failure
+      stopLogcatStream();
       return {
         content: [
           {
@@ -192,7 +192,7 @@ server.tool(
 );
 
 function createLogTool(
-  toolName: keyof typeof descriptions, // או keyof typeof keywords
+  toolName: keyof typeof descriptions,
   keyword: string
 ): void {
   server.tool(

@@ -10,9 +10,6 @@ export const keywords = {
       "sdk integration",
       "apps flyer guide",
       "step by step appsflyer",
-      "מדריך appsflyer",
-      "איך להוסיף appsflyer",
-      "חיבור appsflyer",
       "setup appsflyer sdk"
     ],
   
@@ -79,8 +76,6 @@ export const keywords = {
     "how to send event appsflyer",
     "event listener appsflyer",
     "apps flyer event code",
-    "שליחת אירוע appsflyer",
-    "אירועים sdk",
     "track in-app"
   ],
 
