@@ -16,8 +16,12 @@ export async function startLogcatStream(
   let deviceId = deviceIdParam;
   if (!deviceId) {
     if (devices.length === 0) throw new Error("[Logcat] No devices connected.");
-    if (devices.length > 1) throw new Error("[Logcat] Multiple devices found. Specify deviceId.");
-    deviceId = devices[0];
+    if (devices.length > 1) {
+      throw new Error(
+        "[Logcat] Multiple devices found. Specify deviceId. Connected devices:\n" +
+        devices.map(id => `- ${id}`).join("\n")
+      );
+    }    deviceId = devices[0];
   }
 
   if (logcatProcess) {

@@ -9,7 +9,6 @@ import { descriptions } from "./constants/descriptions.js";
 import { intents } from "./constants/intents.js";
 import { keywords } from "./constants/keywords.js";
 import { steps } from "./constants/steps.js";
-import { getAdbPath, validateAdb, getConnectedDevices } from "./adb.js";
 
 const server = new McpServer({
   name: "appsflyer-logcat-mcp-server",
@@ -125,48 +124,14 @@ server.tool(
   },
   async ({ deviceId }) => {
     try {
-      const adbPath = getAdbPath();
-      validateAdb(adbPath);
-      const devices = getConnectedDevices(adbPath);
-
-      if (devices.length === 0) {
-        return {
-          content: [
-            {
-              type: "text",
-              text: "No Android devices are currently connected via ADB.",
-            },
-          ],
-        };
-      }
-
-      if (!deviceId) {
-        if (devices.length > 1) {
-          return {
-            content: [
-              {
-                type: "text",
-                text:
-                  "Multiple devices are connected. Please select one of the following device IDs:\n" +
-                  devices.map((id: string) => `- ${id}`).join("\n"),
-              },
-            ],
-          };
-        }
-        deviceId = devices[0]; 
-      }
-
       await startLogcatStream("AppsFlyer_", deviceId);
-
       let waited = 0;
       while (logBuffer.length === 0 && waited < 2000) {
         await new Promise((res) => setTimeout(res, 200));
         waited += 200;
       }
-
       const logs = getRecentLogs();
       stopLogcatStream();
-
       return {
         content: [
           {
@@ -321,121 +286,14 @@ server.tool(
     if (missingValueParams.length > 0) {
       return {
         content: [
-          { type: "text", text: `❗ The following parameters are missing values: ${missingValueParams.join(", ")}. Please complete them.` },
+          { type: "text", text: `❗ Missing value for parameters: ${missingValueParams.join(", ")}` },
         ],
       };
     }
-
-    if (!wantsExamples) {
-      return {
-        content: [
-          {
-            type: "text",
-            text: "Would you like to see examples of event names and parameters? (yes/no)",
-          },
-        ],
-      };
-    }
-
-    if (wantsExamples === "yes") {
-      return {
-        content: [
-          {
-            type: "text",
-            text: [
-              "**Example event names:**",
-              "• af_login",
-              "• af_complete_registration",
-              "• registration_verified",
-              "• submit_account_application",
-              "• open_account_success",
-              "• open_account_rejected",
-              "• submit_credit_card_app",
-              "• credit_card_application_success",
-              "• credit_card_application_rejected",
-              "• credit_card_activation",
-              "",
-              "**Example parameters:**",
-              "• af_registration_method: \"email, Facebook\"",
-              "• account_type: \"savings\"",
-              "• application_method: \"app\"",
-              "• PII_type: \"passport\"",
-              "• credit_card_type: \"gold card\"",
-              "• loan_id: \"1735102\"",
-              "• loan_type: \"housing\"",
-              "• loan_amount: \"1000\"",
-              "• loan_period: \"3 months\"",
-              "• submit_registration: \"email, Facebook\"",
-              "",
-              "You may also use your own custom names and parameters if you prefer.",
-            ].join("\n"),
-          },
-        ],
-      };
-    }
-
-    function generateJavaCode(
-      eventName: string,
-      eventParams: Record<string, any>,
-      includeListener: boolean
-    ): string[] {
-      const code: string[] = [];
-      code.push("Map<String, Object> eventValues = new HashMap<String, Object>();");
-      for (const [key, value] of Object.entries(eventParams)) {
-        const javaValue = typeof value === "number" ? value : `\"${value}\"`;
-        code.push(`eventValues.put(\"${key}\", ${javaValue});`);
-      }
-      code.push(`AppsFlyerLib.getInstance().logEvent(getApplicationContext(), \"${eventName}\", eventValues);`);
-      if (includeListener) {
-        code.push("// Optional: Add AppsFlyerRequestListener if needed");
-        code.push("// AppsFlyerLib.getInstance().logEvent(..., new AppsFlyerRequestListener() { ... });");
-      }
-      return code;
-    }
-
-    const codeLines = generateJavaCode(eventName, eventParams, hasListener);
 
     return {
       content: [
-        {
-          type: "text",
-          text: ["```java", ...codeLines, "```"].join("\n"),
-        },
-      ],
-    };
-  }
-);
-
-server.tool(
-  "verifyInAppEvent",
-  {},
-  {
-    description: descriptions.verifyInAppEvent,
-    intent: intents.verifyInAppEvent,
-    keywords: keywords.verifyInAppEvent,
-  },
-  async ({ }) => {
-    const logs = logBuffer;
-
-    const hasEventName = logs.includes('"event": "af_level_achieved"');
-    const hasEventValue = logs.includes('"eventvalue":"{"af_content":');
-    const hasEndpoint = logs.includes(
-      "androidevent?app_id=com.appsflyer.onelink.appsflyeronelinkbasicapp"
-    );
-
-    const allPresent = hasEventName && hasEventValue && hasEndpoint;
-
-    return {
-      content: [
-        {
-          type: "text",
-          text: allPresent
-            ? "✅ Event `af_level_achieved` was successfully logged. All required log entries were found."
-            : `❌ The event may not have been logged correctly. Results:
-- Has Event Name: ${hasEventName}
-- Has Event Value: ${hasEventValue}
-- Has Endpoint: ${hasEndpoint}`,
-        },
+        { type: "text", text: `✅ Event "${eventName}" created successfully!` },
       ],
     };
   }
