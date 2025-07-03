@@ -30,9 +30,9 @@ export async function startLogcatStream(
 
   if (logcatProcess) {
     if (deviceId === currentDeviceId)
-      return console.warn("[Logcat] Already streaming this device.");
+      return console.log("[Logcat] Already streaming this device.");
     stopLogcatStream();
-    console.warn(`[Logcat] Switching to device: ${deviceId}`);
+    console.log(`[Logcat] Switching to device: ${deviceId}`);
   }
   logcatProcess = spawn(adbPath, ["-s", deviceId, "logcat"]);
   logcatProcess.stdout.setEncoding("utf8");
@@ -53,16 +53,16 @@ export async function startLogcatStream(
   });
 
   logcatProcess.stderr.on("data", (err) =>
-    console.error("[Logcat stderr]", err.toString())
+    console.log("[Logcat stderr]", err.toString())
   );
 
   logcatProcess.on("exit", (code) => {
-    console.warn(`[Logcat] Stream exited (${code})`);
+    console.log(`[Logcat] Stream exited (${code})`);
     logcatProcess = null;
     currentDeviceId = null;
 
     if (code !== 0 && restartAttempts++ < MAX_RESTARTS) {
-      console.warn(`[Logcat] Restarting (attempt ${restartAttempts})...`);
+      console.log(`[Logcat] Restarting (attempt ${restartAttempts})...`);
       setTimeout(
         () => startLogcatStream(filterTag, deviceId),
         RESTART_DELAY_MS
@@ -79,7 +79,7 @@ export async function startLogcatStream(
 
 
 export function stopLogcatStream(): void {
-  if (!logcatProcess) return console.warn("[Logcat] No active stream.");
+  if (!logcatProcess) return console.log("[Logcat] No active stream.");
   try {
     logcatProcess.kill();
     logcatProcess = null;
@@ -91,7 +91,7 @@ export function stopLogcatStream(): void {
   }
 }
 
-export const getRecentLogs = (lines = 100): string =>
+export const getRecentLogs = (lines = 700): string =>
   logBuffer.slice(-lines).join("\n");
 
 export const getCurrentDeviceId = (): string | null => currentDeviceId;
@@ -114,7 +114,7 @@ export function extractParam(logs: string, key: string): string | undefined {
   return match?.[1];
 }
 
-export async function getLogs(lineCount = 300): Promise<string> {
+export async function getLogs(lineCount = 700): Promise<string> {
   const adbPath = getAdbPath();
   validateAdb(adbPath);
   const devices = getConnectedDevices(adbPath);

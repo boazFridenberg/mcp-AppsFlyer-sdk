@@ -10,8 +10,6 @@ import { intents } from "./constants/intents.js";
 import { keywords } from "./constants/keywords.js";
 import { steps } from "./constants/steps.js";
 import { getAdbPath, validateAdb, getConnectedDevices } from "./adb.js";
-import fs from "fs";
-import path from "path";
 
 const server = new McpServer({
   name: "appsflyer-logcat-mcp-server",
@@ -117,7 +115,6 @@ server.tool(
 server.tool(
   "fetchAppsflyerLogs",
   {
-    lineCount: z.number().default(500),
     deviceId: z.string().optional(),
   },
   {
@@ -125,7 +122,7 @@ server.tool(
     intent: intents.fetchAppsflyerLogs,
     keywords: keywords.fetchAppsflyerLogs,
   },
-  async ({ lineCount, deviceId }) => {
+  async ({ deviceId }) => {
     try {
       const adbPath = getAdbPath();
       validateAdb(adbPath);
@@ -166,7 +163,7 @@ server.tool(
         waited += 200;
       }
 
-      const logs = getRecentLogs(lineCount);
+      const logs = getRecentLogs();
       stopLogcatStream();
 
       return {
@@ -197,7 +194,7 @@ function createLogTool(
 ): void {
   server.tool(
     toolName,
-    { lineCount: z.number().optional().default(50) },
+    {},
     {
       description: descriptions[toolName],
       intent: intents[toolName],
@@ -205,47 +202,6 @@ function createLogTool(
     },
     async ({ lineCount }: { lineCount: number }) => {
       const logs = getParsedAppsflyerFilters(lineCount, keyword);
-
-      if (keyword === "CONVERSION-") {
-        if (!logs.length) {
-          return {
-            content: [
-              {
-                type: "text",
-                text: "No conversion log entry found.",
-              },
-            ],
-          };
-        }
-
-        const latestLog = logs[logs.length - 1];
-        const desiredKeys = [
-          "af_timestamp",
-          "uid",
-          "installDate",
-          "firstLaunchDate",
-          "advertiserId",
-          "advertiserIdEnabled",
-          "onelink_id",
-        ];
-
-        const filtered = Object.fromEntries(
-          desiredKeys
-            .filter((key) => key in latestLog.json)
-            .map((key) => [key, latestLog.json[key]])
-        );
-
-        return {
-          content: [
-            {
-              type: "text",
-              text: JSON.stringify(filtered, null, 2),
-            },
-          ],
-        };
-      }
-
-      // default behavior for other keywords
       return {
         content: [
           {
@@ -267,23 +223,22 @@ createLogTool("getDeepLinkLogs", "deepLink");
 
 server.tool(
   "getAppsflyerErrors",
-  { lineCount: z.number().optional().default(50) },
+  {},
   {
     description: descriptions.getAppsflyerErrors,
     intent: intents.getAppsflyerErrors,
     keywords: keywords.getAppsflyerErrors,
   },
-  async ({ lineCount }) => {
+  async ({ }) => {
     const errorKeywords = keywords.getAppsflyerErrors;
     const errors = errorKeywords.flatMap((keyword) =>
-      getParsedAppsflyerFilters(lineCount, keyword)
+      getParsedAppsflyerFilters(keyword)
     );
     return {
       content: [{ type: "text", text: JSON.stringify(errors, null, 2) }],
     };
   }
 );
-
 
 server.tool(
   "createAppsFlyerLogEvent",
@@ -299,89 +254,84 @@ server.tool(
     const wantsExamples = args.wantsExamples;
     const hasListener = args.hasListener?.toLowerCase() === "yes";
 
-    // 1. Missing event name
-    if (!eventName) {
-      return {
-        content: [
-          {
-            type: "text",
-            text: "❗ Missing event name. Please provide the event name.",
-          },
-        ],
-      };
-    }
-
-    // 2. Missing event parameters
-    if (Object.keys(eventParams).length === 0) {
-      return {
-        content: [
-          {
-            type: "text",
-            text:
-              "❗ Missing event parameters. Please provide key-value pairs for event parameters.",
-          },
-        ],
-      };
-    }
-
-    // 3. Check if any parameter has missing or empty value
+    const missingName = !eventName;
+    const missingParams = Object.keys(eventParams).length === 0;
     const missingValueParams = Object.entries(eventParams)
       .filter(([_, v]) => v === undefined || v === null || v === "")
       .map(([k]) => k);
 
-    if (missingValueParams.length > 0) {
+    if (missingName) {
       return {
         content: [
-          {
-            type: "text",
-            text:
-              `❗ The following parameters have missing values: ${missingValueParams.join(
-                ", "
-              )}. Please provide values for them.`,
-          },
+          { type: "text", text: "❗ Missing event name. You can use any name you'd like. Please provide an event name to continue." },
         ],
       };
     }
 
-    // 4. If user asked for examples or we want to ask if wants examples
+    if (missingParams) {
+      return {
+        content: [
+          { type: "text", text: "❗ Missing event parameters. Please enter one or more key-value pairs for the event parameters." },
+        ],
+      };
+    }
+
+    if (missingValueParams.length > 0) {
+      return {
+        content: [
+          { type: "text", text: `❗ The following parameters are missing values: ${missingValueParams.join(", ")}. Please complete them.` },
+        ],
+      };
+    }
+
     if (!wantsExamples) {
       return {
         content: [
           {
             type: "text",
-            text:
-              "Would you like to see example event names and parameters? (yes/no)",
+            text: "Would you like to see examples of event names and parameters? (yes/no)",
           },
         ],
       };
     }
 
     if (wantsExamples === "yes") {
-      // Show example event names and example parameters
       return {
         content: [
           {
             type: "text",
             text: [
               "**Example event names:**",
-              "• af_purchase",
-              "• af_add_to_cart",
               "• af_login",
               "• af_complete_registration",
+              "• registration_verified",
+              "• submit_account_application",
+              "• open_account_success",
+              "• open_account_rejected",
+              "• submit_credit_card_app",
+              "• credit_card_application_success",
+              "• credit_card_application_rejected",
+              "• credit_card_activation",
               "",
               "**Example parameters:**",
-              "• af_price: \"9.99\"",
-              "• af_currency: \"USD\"",
-              "• af_content_type: \"product\"",
+              "• af_registration_method: \"email, Facebook\"",
+              "• account_type: \"savings\"",
+              "• application_method: \"app\"",
+              "• PII_type: \"passport\"",
+              "• credit_card_type: \"gold card\"",
+              "• loan_id: \"1735102\"",
+              "• loan_type: \"housing\"",
+              "• loan_amount: \"1000\"",
+              "• loan_period: \"3 months\"",
+              "• submit_registration: \"email, Facebook\"",
               "",
-              "Please provide the event name and parameters to proceed.",
+              "You may also use your own custom names and parameters if you prefer.",
             ].join("\n"),
           },
         ],
       };
     }
 
-    // 5. Generate the AppsFlyer log event Java code
     function generateJavaCode(
       eventName: string,
       eventParams: Record<string, any>,
@@ -390,12 +340,10 @@ server.tool(
       const code: string[] = [];
       code.push("Map<String, Object> eventValues = new HashMap<String, Object>();");
       for (const [key, value] of Object.entries(eventParams)) {
-        const javaValue = typeof value === "number" ? value : `"${value}"`;
-        code.push(`eventValues.put("${key}", ${javaValue});`);
+        const javaValue = typeof value === "number" ? value : `\"${value}\"`;
+        code.push(`eventValues.put(\"${key}\", ${javaValue});`);
       }
-      code.push(
-        `AppsFlyerLib.getInstance().logEvent(getApplicationContext(), "${eventName}", eventValues);`
-      );
+      code.push(`AppsFlyerLib.getInstance().logEvent(getApplicationContext(), \"${eventName}\", eventValues);`);
       if (includeListener) {
         code.push("// Optional: Add AppsFlyerRequestListener if needed");
         code.push("// AppsFlyerLib.getInstance().logEvent(..., new AppsFlyerRequestListener() { ... });");
@@ -416,18 +364,15 @@ server.tool(
   }
 );
 
-
 server.tool(
   "testInAppEvent",
-  {
-    lineCount: z.number().optional().default(100),
-  },
+  {},
   {
     description: descriptions.testInAppEvent,
     intent: intents.testInAppEvent,
     keywords: keywords.testInAppEvent,
   },
-  async ({ lineCount }) => {
+  async ({ }) => {
     const logs = logBuffer;
 
     const hasEventName = logs.includes('"event": "af_level_achieved"');
