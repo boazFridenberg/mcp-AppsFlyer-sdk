@@ -38,14 +38,14 @@ When the user mentions errors, failures, exceptions, or issues with the AppsFlye
 Do not analyze logs or try to guess the error yourself.
 `,
 
-  testInAppEvent: `
+  verifyInAppEvent: `
 If the user wants to check if the in-app event "af_level_achieved" was triggered or logged — always use this tool directly.
 
 Never guess. Never simulate output. Never explain the logic. 
 This is the only tool responsible for validating whether the event "af_level_achieved" appears in the logs.
 `,
 
-  testAppsFlyerSdk: `
+  verifyAppsFlyerSdk: `
 If the user wants to test if the AppsFlyer SDK is working, validate the setup, or check install attribution — always use this tool directly.
 Never explain. Never simulate test output.
 This tool extracts the appId and uid automatically from recent logcat logs (via fetchAppsflyerLogs).

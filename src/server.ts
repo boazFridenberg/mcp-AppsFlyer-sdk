@@ -35,13 +35,14 @@ server.tool(
     };
   }
 );
+
 server.tool(
-  "testAppsFlyerSdk",
+  "verifyAppsFlyerSdk",
   {}, 
   {
-    description: descriptions.testAppsFlyerSdk,
-    intent: intents.testAppsFlyerSdk,
-    keywords: keywords.testAppsFlyerSdk,
+    description: descriptions.verifyAppsFlyerSdk,
+    intent: intents.verifyAppsFlyerSdk,
+    keywords: keywords.verifyAppsFlyerSdk,
   },
   async () => {
     const devKey = process.env.DEV_KEY;
@@ -365,12 +366,12 @@ server.tool(
 );
 
 server.tool(
-  "testInAppEvent",
+  "verifyInAppEvent",
   {},
   {
-    description: descriptions.testInAppEvent,
-    intent: intents.testInAppEvent,
-    keywords: keywords.testInAppEvent,
+    description: descriptions.verifyInAppEvent,
+    intent: intents.verifyInAppEvent,
+    keywords: keywords.verifyInAppEvent,
   },
   async ({ }) => {
     const logs = logBuffer;

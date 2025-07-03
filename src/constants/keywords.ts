@@ -59,7 +59,7 @@ export const keywords = {
       "No deep link"
     ],
   
-    testAppsFlyerSdk: [
+    verifyAppsFlyerSdk: [
       "test sdk",
       "validate appsflyer",
       "check integration",
@@ -79,7 +79,7 @@ export const keywords = {
     "track in-app"
   ],
 
-  testInAppEvent: [
+  verifyInAppEvent: [
   "af_level_achieved",
   "check if af_level_achieved was logged",
   "was af_level_achieved triggered",

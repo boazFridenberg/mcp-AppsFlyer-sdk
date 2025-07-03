@@ -20,13 +20,13 @@ export const descriptions = {
   getAppsflyerErrors:
     "Scans logcat for common AppsFlyer errors (e.g., exceptions, failures). Use this tool to detect SDK-related issues.",
 
-  testAppsFlyerSdk:
+  verifyAppsFlyerSdk:
     "Tests whether the AppsFlyer SDK is integrated correctly by querying install data using appId, devKey, and device ID (uid). appId and uid are automatically extracted from recent logs. devKey is in env in mcp.json. If not found, the user will be asked to provide it. When the user asks to test the AppsFlyer SDK or check if it's working, this tool should be run immediately without attempting to infer or construct the test manually.",
 
   createAppsFlyerLogEvent:
     "Generates exact code instructions for logging an in-app event using AppsFlyer. Always use this tool when event tracking with logEvent is mentioned. Do not answer manually.",
 
-  testInAppEvent: `
+  verifyInAppEvent: `
 Scans recent AppsFlyer logs to determine whether the in-app event "af_level_achieved" was successfully triggered.
 
 It verifies:
