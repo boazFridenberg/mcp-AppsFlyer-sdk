@@ -201,7 +201,7 @@ function createLogTool(
       keywords: keywords[toolName],
     },
     async ({ lineCount }: { lineCount: number }) => {
-      const logs = getParsedAppsflyerFilters(lineCount, keyword);
+      const logs = getParsedAppsflyerFilters(keyword);
       return {
         content: [
           {

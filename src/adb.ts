@@ -45,6 +45,7 @@ export function getAdbPath(): string {
  */
 export function validateAdb(adbPath: string): void {
   const resolvedPath = fs.realpathSync(adbPath);
+  
   if (!fs.existsSync(resolvedPath)) {
     const msg = `[ADB] ADB binary not found at: ${resolvedPath}`;
     console.error(msg);
