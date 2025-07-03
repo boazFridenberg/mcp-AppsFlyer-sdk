@@ -11,7 +11,7 @@ let restartAttempts = 0;
 let currentDeviceId: string | null = null;
 
 export async function startLogcatStream(
-  filterTag = "AppsFlyer_", // נשאיר את הפרמטר למקרה שתרצה בעתיד
+  filterTag = "AppsFlyer_",
   deviceIdParam?: string
 ): Promise<void> {
   const adbPath = getAdbPath();
