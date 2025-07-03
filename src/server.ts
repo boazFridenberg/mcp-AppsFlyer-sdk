@@ -200,7 +200,7 @@ function createLogTool(
       intent: intents[toolName],
       keywords: keywords[toolName],
     },
-    async ({ lineCount }: { lineCount: number }) => {
+    async () => {
       const logs = getParsedAppsflyerFilters(keyword);
       return {
         content: [

@@ -18,12 +18,12 @@ export function extractJsonFromLine(line: string): Record<string, any> | null {
   }
 }
  
-export function getParsedAppsflyerFilters(lineCount = 700, keyword: string): ParsedLog[] {
+export function getParsedAppsflyerFilters(keyword?: string): ParsedLog[] {
   const lines = logBuffer.filter(
-    line => line.includes("AppsFlyer") && line.includes(keyword)
+    line => line.includes("AppsFlyer") && (keyword ? line.includes(keyword) : true)
   );
 
-  const recent = lines.slice(-lineCount);
+  const recent = lines.slice(-700);
 
   return recent
     .map(line => {
@@ -31,7 +31,7 @@ export function getParsedAppsflyerFilters(lineCount = 700, keyword: string): Par
       return json
         ? {
             timestamp: line.substring(0, 18),
-            type: keyword,
+            type: keyword || "ALL",
             json
           }
         : null;
