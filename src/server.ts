@@ -370,6 +370,41 @@ server.tool(
     };
   }
 );
+server.tool(
+  "verifyInAppEvent",
+  {},
+  {
+    description: descriptions.verifyInAppEvent,
+    intent: intents.verifyInAppEvent,
+    keywords: keywords.verifyInAppEvent,
+  },
+  async ({ }) => {
+    const logs = logBuffer;
+
+    const hasEventName = logs.includes('"event": "af_level_achieved"');
+    const hasEventValue = logs.includes('"eventvalue":"{"af_content":');
+    const hasEndpoint = logs.includes(
+      "androidevent?app_id=com.appsflyer.onelink.appsflyeronelinkbasicapp"
+    );
+
+    const allPresent = hasEventName && hasEventValue && hasEndpoint;
+
+    return {
+      content: [
+        {
+          type: "text",
+          text: allPresent
+            ? "✅ Event `af_level_achieved` was successfully logged. All required log entries were found."
+            : `❌ The event may not have been logged correctly. Results:
+- Has Event Name: ${hasEventName}
+- Has Event Value: ${hasEventValue}
+- Has Endpoint: ${hasEndpoint}`,
+        },
+        { type: "text", text: `✅ Event created successfully!` },
+      ],
+    };
+  }
+)
 
 const transport = new StdioServerTransport();
 await server.connect(transport);
