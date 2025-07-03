@@ -11,7 +11,7 @@ let restartAttempts = 0;
 let currentDeviceId: string | null = null;
 
 export async function startLogcatStream(
-  filterTag = "AppsFlyer_", // נשאיר את הפרמטר למקרה שתרצה בעתיד
+  filterTag = "AppsFlyer_",
   deviceIdParam?: string
 ): Promise<void> {
   const adbPath = getAdbPath();
@@ -123,7 +123,7 @@ export async function getLogs(lineCount = 300): Promise<string> {
     throw new Error("No Android devices connected via ADB.");
   }
 
-  const deviceId = devices[0]; // אם יש כמה – כרגע ניקח את הראשון
+  const deviceId = devices[0];
 
   await startLogcatStream("AppsFlyer_", deviceId);
 
