@@ -243,32 +243,139 @@ server.tool(
   }
 );
 
+
 server.tool(
   "createAppsFlyerLogEvent",
   {
-    hasListener: z.enum(["yes", "no"], {
-      required_error: "Please indicate if you are using a listener or not",
-    }),
+    eventName: z.string().optional(),
+    eventParams: z.record(z.any()).optional(),
+    wantsExamples: z.enum(["yes", "no"]).optional(),
+    hasListener: z.enum(["yes", "no"]).optional(),
   },
-  {
-    description: descriptions.createAppsFlyerLogEvent,
-    intent: intents.createAppsFlyerLogEvent,
-    keywords: keywords.createAppsFlyerLogEvent,
-  },
-  async ({ hasListener }) => {
-    const includeListener = hasListener === "yes";
-    const instructions = steps.createAppsFlyerLogEvent(includeListener);
+  async (args) => {
+    const eventName = args.eventName?.trim();
+    const eventParams = args.eventParams || {};
+    const wantsExamples = args.wantsExamples;
+    const hasListener = args.hasListener?.toLowerCase() === "yes";
+
+    // 1. Missing event name
+    if (!eventName) {
+      return {
+        content: [
+          {
+            type: "text",
+            text: "❗ Missing event name. Please provide the event name.",
+          },
+        ],
+      };
+    }
+
+    // 2. Missing event parameters
+    if (Object.keys(eventParams).length === 0) {
+      return {
+        content: [
+          {
+            type: "text",
+            text:
+              "❗ Missing event parameters. Please provide key-value pairs for event parameters.",
+          },
+        ],
+      };
+    }
+
+    // 3. Check if any parameter has missing or empty value
+    const missingValueParams = Object.entries(eventParams)
+      .filter(([_, v]) => v === undefined || v === null || v === "")
+      .map(([k]) => k);
+
+    if (missingValueParams.length > 0) {
+      return {
+        content: [
+          {
+            type: "text",
+            text:
+              `❗ The following parameters have missing values: ${missingValueParams.join(
+                ", "
+              )}. Please provide values for them.`,
+          },
+        ],
+      };
+    }
+
+    // 4. If user asked for examples or we want to ask if wants examples
+    if (!wantsExamples) {
+      return {
+        content: [
+          {
+            type: "text",
+            text:
+              "Would you like to see example event names and parameters? (yes/no)",
+          },
+        ],
+      };
+    }
+
+    if (wantsExamples === "yes") {
+      // Show example event names and example parameters
+      return {
+        content: [
+          {
+            type: "text",
+            text: [
+              "**Example event names:**",
+              "• af_purchase",
+              "• af_add_to_cart",
+              "• af_login",
+              "• af_complete_registration",
+              "",
+              "**Example parameters:**",
+              "• af_price: \"9.99\"",
+              "• af_currency: \"USD\"",
+              "• af_content_type: \"product\"",
+              "",
+              "Please provide the event name and parameters to proceed.",
+            ].join("\n"),
+          },
+        ],
+      };
+    }
+
+    // 5. Generate the AppsFlyer log event Java code
+    function generateJavaCode(
+      eventName: string,
+      eventParams: Record<string, any>,
+      includeListener: boolean
+    ): string[] {
+      const code: string[] = [];
+      code.push("Map<String, Object> eventValues = new HashMap<String, Object>();");
+      for (const [key, value] of Object.entries(eventParams)) {
+        const javaValue = typeof value === "number" ? value : `"${value}"`;
+        code.push(`eventValues.put("${key}", ${javaValue});`);
+      }
+      code.push(
+        `AppsFlyerLib.getInstance().logEvent(getApplicationContext(), "${eventName}", eventValues);`
+      );
+      if (includeListener) {
+        code.push("// Optional: Add AppsFlyerRequestListener if needed");
+        code.push("// AppsFlyerLib.getInstance().logEvent(..., new AppsFlyerRequestListener() { ... });");
+      }
+      return code;
+    }
+
+    const codeLines = generateJavaCode(eventName, eventParams, hasListener);
 
     return {
       content: [
         {
           type: "text",
-          text: instructions.join("\n\n"),
+          text: ["```java", ...codeLines, "```"].join("\n"),
         },
       ],
     };
   }
 );
+
+
 server.tool(
   "testInAppEvent",
   {
