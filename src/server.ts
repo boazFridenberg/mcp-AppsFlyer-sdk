@@ -201,7 +201,7 @@ function createLogTool(
       intent: intents[toolName],
       keywords: keywords[toolName],
     },
-    async ({ lineCount }: { lineCount: number }) => {
+    async () => {
       const logs = getParsedAppsflyerFilters(keyword);
 
       if (keyword === "CONVERSION-") {
