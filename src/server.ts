@@ -9,6 +9,8 @@ import { descriptions } from "./constants/descriptions.js";
 import { intents } from "./constants/intents.js";
 import { keywords } from "./constants/keywords.js";
 import { steps } from "./constants/steps.js";
+import fs from "fs";
+import path from "path";
 
 const server = new McpServer({
   name: "appsflyer-logcat-mcp-server",
@@ -359,7 +361,7 @@ server.tool(
     }
 
     const codeLines = generateJavaCode(eventName, eventParams, hasListener);
-
+    
     return {
       content: [
         {
@@ -405,6 +407,63 @@ server.tool(
     };
   }
 )
+
+
+server.tool(
+  "appsFlyerJsonEvent",
+  {
+    inputFile: z.string().optional().describe("JSON string of event definitions"),
+  },
+  async (args, _extra) => {
+    const { inputFile } = args;
+    if (!inputFile) {
+      return { content: [{ type: "text", text: "❗ Please provide JSON input containing AppsFlyer events." }] };
+    }
+    let parsed;
+    try {
+      parsed = JSON.parse(inputFile);
+    } catch {
+      return { content: [{ type: "text", text: "❌ Invalid JSON format." }] };
+    }
+    if (Array.isArray(parsed)) {
+      parsed = { events: parsed };
+    }
+    if (!parsed.events || !Array.isArray(parsed.events)) {
+      return { content: [{ type: "text", text: "⚠️ JSON must contain an 'events' array." }] };
+    }
+    const events = parsed.events;
+    const generateJavaCodeForEvent = (event: any) => {
+      const eventName = event.eventIdentifier || event.eventName || "event_unknown";
+      const params = event.parameters || [];
+      const paramLines = params.map((param: any) => {
+        const key = param.parameterIdentifier || param.parameterName || "param_unknown";
+        const val =
+          typeof param.parameterValueExample === "string"
+            ? `"${param.parameterValueExample}"`
+            : param.parameterValueExample !== undefined
+            ? param.parameterValueExample
+            : `"value"`;
+        return `eventValues.put("${key}", ${val});`;
+      });
+      return [
+        `Map<String, Object> eventValues = new HashMap<>();`,
+        ...paramLines,
+        `AppsFlyerLib.getInstance().logEvent(context, "${eventName}", eventValues);`,
+        ``,
+      ].join("\n");
+    };
+    const javaCode = events.map(generateJavaCodeForEvent).join("\n");
+    return {
+      content: [
+        {
+          type: "text",
+          text: "```java\n" + javaCode + "\n```",
+        },
+      ],
+    };
+  }
+);
+
 
 const transport = new StdioServerTransport();
 await server.connect(transport);
