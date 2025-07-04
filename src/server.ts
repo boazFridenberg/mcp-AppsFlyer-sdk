@@ -160,7 +160,7 @@ function createLogTool(
 ): void {
   server.tool(
     toolName,
-    { lineCount: z.number().optional().default(50) },
+    {},
     {
       description: descriptions[toolName],
       intent: intents[toolName],
