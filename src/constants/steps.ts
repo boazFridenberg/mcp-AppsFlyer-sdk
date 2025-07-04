@@ -60,7 +60,7 @@ AppsFlyerLib.getInstance().start(this);
   `✅ **Done!**  
 Now that the SDK is integrated, you can verify it's working properly.
 
-➡️ We recommend running the **testAppsFlyerSdk** tool to make sure the SDK is initialized and sending logs correctly.`,
+➡️ We recommend running the **veritfyAppsFlyerSdk** tool to make sure the SDK is initialized and sending logs correctly.`,
   ],
   
   createAppsFlyerLogEvent: (includeListener: boolean): string[] => [
