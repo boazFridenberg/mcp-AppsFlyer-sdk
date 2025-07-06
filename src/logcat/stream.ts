@@ -21,13 +21,22 @@ export async function startLogcatStream(
         "[Logcat] Multiple devices found. Specify deviceId. Connected devices:\n" +
         devices.map(id => `- ${id}`).join("\n")
       );
-    }    deviceId = devices[0];
+    }
+    deviceId = devices[0];
+  }
+
+  // DeviceId validation: ensure device is connected
+  if (!devices.includes(deviceId)) {
+    logBuffer = [];
+    throw new Error(`[Logcat] Device not connected: ${deviceId}`);
   }
 
   if (logcatProcess) {
     if (deviceId === currentDeviceId) return;
+    logBuffer = [];
     stopLogcatStream();
   }
+
   try {
     logcatProcess = spawn(adbPath, ["-s", deviceId, "logcat"]);
     logcatProcess.stdout.setEncoding("utf8");
@@ -56,7 +65,7 @@ export async function startLogcatStream(
     logcatProcess = null;
     currentDeviceId = null;
     if (code !== 0) {
-      console.error(`[Logcat] Stream exited with code ${code}`);
+      console.log(`[Logcat] Stream exited with code ${code}`);
     }
   });
 }
@@ -67,14 +76,10 @@ export function stopLogcatStream(): void {
     logcatProcess.kill();
     logcatProcess = null;
     currentDeviceId = null;
-    logBuffer = [];
   } catch (err) {
     throw new Error(`[Logcat] Failed to stop stream: ${err}`);
   }
 }
-
-export const getRecentLogs = (lines = MAX_LOG_LINES): string =>
-  logBuffer.slice(-lines).join("\n");
 
 export function extractParam(logs: string, key: string): string | undefined {
   const lines = logs.split("\n");
@@ -90,21 +95,4 @@ export function extractParam(logs: string, key: string): string | undefined {
   const regex = new RegExp(`[?&\\s"']${key}["=:\\s]*["']?([\\w\\-.]+)["']?`);
   const match = logs.match(regex);
   return match?.[1];
-}
-
-export async function getLogs(lineCount = MAX_LOG_LINES): Promise<string> {
-  const adbPath = getAdbPath();
-  validateAdb(adbPath);
-  const devices = getConnectedDevices(adbPath);
-  if (devices.length === 0) throw new Error("No Android devices connected via ADB.");
-  const deviceId = devices[0];
-  await startLogcatStream("AppsFlyer_", deviceId);
-  let waited = 0;
-  while (logBuffer.length === 0 && waited < 2000) {
-    await new Promise((res) => setTimeout(res, 200));
-    waited += 200;
-  }
-  const logs = getRecentLogs(lineCount);
-  stopLogcatStream();
-  return logs || "";
 }
