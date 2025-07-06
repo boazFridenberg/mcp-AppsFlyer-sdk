@@ -65,7 +65,7 @@ export async function startLogcatStream(
     logcatProcess = null;
     currentDeviceId = null;
     if (code !== 0) {
-      console.error(`[Logcat] Stream exited with code ${code}`);
+      console.log(`[Logcat] Stream exited with code ${code}`);
     }
   });
 }

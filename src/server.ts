@@ -2,8 +2,7 @@
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { startLogcatStream, logBuffer, stopLogcatStream, extractParam } from "./logcat/stream.js";
-import { extractJsonFromLine } from "./logcat/parse.js";
+import { startLogcatStream, getRecentLogs, logBuffer, stopLogcatStream, extractParam, getLogs } from "./logcat/stream.js";
 import { getParsedAppsflyerFilters } from "./logcat/parse.js";
 import { z } from "zod";
 import { descriptions } from "./constants/descriptions.js";
@@ -165,13 +164,9 @@ server.tool(
       };
     }
 
+    let logsText = "";
     try {
-      await startLogcatStream("AppsFlyer_");
-      let waited = 0;
-      while (logBuffer.length === 0 && waited < 2000) {
-        await new Promise((res) => setTimeout(res, 200));
-        waited += 200;
-      }
+      logsText = await getLogs(500);
     } catch (err: any) {
       return {
         content: [
