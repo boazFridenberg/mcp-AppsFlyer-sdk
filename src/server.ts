@@ -2,7 +2,7 @@
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { startLogcatStream, getRecentLogs, logBuffer, stopLogcatStream, extractParam, getLogs } from "./logcat/stream.js";
+import { startLogcatStream, logBuffer, stopLogcatStream, extractParam } from "./logcat/stream.js";
 import { getParsedAppsflyerFilters } from "./logcat/parse.js";
 import { z } from "zod";
 import { descriptions } from "./constants/descriptions.js";
@@ -62,7 +62,7 @@ server.tool(
 
     let logsText = "";
     try {
-      logsText = await getLogs(500);
+      logsText = logBuffer.join("\n");
     } catch (err: any) {
       return {
         content: [
@@ -134,8 +134,7 @@ server.tool(
         await new Promise((res) => setTimeout(res, 200));
         waited += 200;
       }
-      const logs = getRecentLogs();
-      stopLogcatStream();
+      const logs = logBuffer.join("\n");
       return {
         content: [
           {
@@ -145,7 +144,6 @@ server.tool(
         ],
       };
     } catch (err: any) {
-      stopLogcatStream();
       return {
         content: [
           {
@@ -164,13 +162,16 @@ function createLogTool(
 ): void {
   server.tool(
     toolName,
-    {},
+    {
+      deviceId: z.string().optional(),
+    },
     {
       description: descriptions[toolName],
       intent: intents[toolName],
       keywords: keywords[toolName],
     },
-    async () => {
+    async ({ deviceId }) => {
+      await startLogcatStream("AppsFlyer_", deviceId);
       const logs = getParsedAppsflyerFilters(keyword);
 
       if (keyword === "CONVERSION-") {
@@ -201,7 +202,6 @@ function createLogTool(
             .filter((key) => key in latestLog.json)
             .map((key) => [key, latestLog.json[key]])
         );
-
         return {
           content: [
             {
