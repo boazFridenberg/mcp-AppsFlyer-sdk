@@ -21,13 +21,7 @@ export async function startLogcatStream(
         "[Logcat] Multiple devices found. Specify deviceId. Connected devices:\n" +
         devices.map(id => `- ${id}`).join("\n")
       );
-    }
-    deviceId = devices[0];
-  }
-
-  if (!devices.includes(deviceId)) {
-    logBuffer = [];
-    throw new Error(`[Logcat] Device not connected: ${deviceId}`);
+    }    deviceId = devices[0];
   }
 
   if (logcatProcess) {
@@ -64,7 +58,7 @@ export async function startLogcatStream(
     logcatProcess = null;
     currentDeviceId = null;
     if (code !== 0) {
-      console.error(`[Logcat] Stream exited with code ${code}`);
+      console.log(`[Logcat] Stream exited with code ${code}`);
     }
   });
 }
