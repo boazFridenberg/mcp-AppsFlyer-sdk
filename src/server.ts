@@ -92,9 +92,45 @@ server.tool(
       };
     }
 
-    const stepsWithDevKey = steps.integrateAppsFlyerSdk.map((step) =>
-      step.replace("<YOUR-DEV-KEY>", devKey)
-    );
+    let latestVersion = null;
+    try {
+      const res = await fetch(
+        `https://search.maven.org/solrsearch/select?q=g:com.appsflyer+AND+a:af-android-sdk&core=gav&rows=1&wt=json`
+      );
+      const json = (await res.json()) as any;
+      latestVersion = json.response?.docs?.[0]?.v;
+    } catch (err: any) {
+      return {
+        content: [
+          {
+            type: "text",
+            text: `❌ Failed to fetch latest SDK version: ${err.message}`,
+          },
+        ],
+      };
+    }
+
+    if (!latestVersion) {
+      return {
+        content: [
+          {
+            type: "text",
+            text: `❌ Could not extract latest SDK version from response.`,
+          },
+        ],
+      };
+    }
+
+    const stepsWithReplacements = steps.integrateAppsFlyerSdk.map((step) => {
+      let updated = step.replace("<YOUR-DEV-KEY>", devKey);
+      if (updated.includes(`implementation 'com.appsflyer:af-android-sdk'`)) {
+        updated = updated.replace(
+          `implementation 'com.appsflyer:af-android-sdk'`,
+          `implementation 'com.appsflyer:af-android-sdk:${latestVersion}'`
+        );
+      }
+      return updated;
+    });
 
     return {
       content: [
@@ -106,6 +142,7 @@ server.tool(
     };
   }
 );
+
 
 
 server.tool(
