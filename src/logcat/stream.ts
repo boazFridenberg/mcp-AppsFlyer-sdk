@@ -21,7 +21,14 @@ export async function startLogcatStream(
         "[Logcat] Multiple devices found. Specify deviceId. Connected devices:\n" +
         devices.map(id => `- ${id}`).join("\n")
       );
-    }    deviceId = devices[0];
+    }
+    deviceId = devices[0];
+  }
+
+  // DeviceId validation: ensure device is connected
+  if (!devices.includes(deviceId)) {
+    logBuffer = [];
+    throw new Error(`[Logcat] Device not connected: ${deviceId}`);
   }
 
   if (logcatProcess) {
