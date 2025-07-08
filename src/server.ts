@@ -412,52 +412,239 @@ server.tool(
 server.tool(
   "appsFlyerJsonEvent",
   {
-    inputFile: z.string().optional().describe("JSON string of event definitions"),
+    inputFile: z.string().optional().describe("JSON string of event definitions or file path"),
+    searchPattern: z.string().optional().describe("Search pattern for JSON files (e.g., '*.json', 'events.json')"),
+    projectPath: z.string().optional().describe("Project directory path to search in"),
+  },
+  {
+    description: "Generate AppsFlyer Java code from JSON event definitions. Can search for JSON files in project or accept direct JSON input.",
+    intent: async ({ entities }: { entities: any }) => {
+      const inputFile = entities.inputFile?.value?.trim();
+      const searchPattern = entities.searchPattern?.value?.trim();
+      const projectPath = entities.projectPath?.value?.trim();
+      
+      // If no input provided, show options
+      if (!inputFile && !searchPattern) {
+        return {
+          type: "text",
+          text: [
+            "📄 **AppsFlyer JSON Event Generator**",
+            "",
+            "You can use this tool in two ways:",
+            "",
+            "🔍 **Search for JSON files:**",
+            "• Specify a search pattern (e.g., 'events.json', '*.json')",
+            "• Optionally specify project path",
+            "",
+            "📝 **Direct JSON input:**",
+            "• Provide JSON string directly",
+            "",
+            "**Example JSON format:**",
+            "```json",
+            "{",
+            '  "events": [',
+            "    {",
+            '      "eventIdentifier": "af_purchase",',
+            '      "parameters": [',
+            "        {",
+            '          "parameterIdentifier": "af_revenue",',
+            '          "parameterValueExample": 29.99',
+            "        }",
+            "      ]",
+            "    }",
+            "  ]",
+            "}",
+            "```",
+            "",
+            "💡 **Usage examples:**",
+            "• 'Generate AppsFlyer code from events.json'",
+            "• 'Search for *.json files and generate AppsFlyer code'",
+            "• 'Generate AppsFlyer code from {\"events\": [...]}'"
+          ].join("\n")
+        };
+      }
+      
+      return {
+        type: "tool-call",
+        tool: "appsFlyerJsonEvent",
+        parameters: {
+          inputFile,
+          searchPattern,
+          projectPath
+        }
+      };
+    },
   },
   async (args, _extra) => {
-    const { inputFile } = args;
-    if (!inputFile) {
-      return { content: [{ type: "text", text: "❗ Please provide JSON input containing AppsFlyer events." }] };
+    const { inputFile, searchPattern, projectPath } = args;
+    
+    let jsonContent = "";
+    
+    // If search pattern provided, search for files
+    if (searchPattern) {
+      try {
+        const fs = require('fs');
+        const path = require('path');
+        const glob = require('glob');
+        
+        const searchPath = projectPath || process.cwd();
+        const pattern = path.join(searchPath, searchPattern);
+        
+        // Search for matching files
+        const files = glob.sync(pattern);
+        
+        if (files.length === 0) {
+          return { 
+            content: [{ 
+              type: "text", 
+              text: `🔍 No files found matching pattern: ${searchPattern}\n\nSearched in: ${searchPath}` 
+            }] 
+          };
+        }
+        
+        // If multiple files found, show options
+        if (files.length > 1) {
+          const fileList = files.map((file: string, index: number) => `${index + 1}. ${file}`).join('\n');
+          return { 
+            content: [{ 
+              type: "text", 
+              text: `📁 Found ${files.length} files:\n\n${fileList}\n\n💡 Please specify the exact file name to process.` 
+            }] 
+          };
+        }
+        
+        // Read the single file found
+        const filePath = files[0];
+        try {
+          jsonContent = fs.readFileSync(filePath, 'utf8');
+        } catch (error) {
+          return { 
+            content: [{ 
+              type: "text", 
+              text: `❌ Error reading file ${filePath}: ${(error as any).message}` 
+            }] 
+          };
+        }
+        
+      } catch (error) {
+        return { 
+          content: [{ 
+            type: "text", 
+            text: `❌ Error searching for files: ${(error as any).message}` 
+          }] 
+        };
+      }
+    } else if (inputFile) {
+      // Try to determine if input is a file path or JSON string
+      if (inputFile.trim().endsWith('.json')) {
+        // Treat as file path
+        try {
+          const fs = require('fs');
+          const path = require('path');
+          const filePath = path.resolve(inputFile);
+          jsonContent = fs.readFileSync(filePath, 'utf8');
+        } catch (error) {
+          return { 
+            content: [{ 
+              type: "text", 
+              text: `❌ Error reading file ${inputFile}: ${(error as any).message}` 
+            }] 
+          };
+        }
+      } else {
+        // Treat as JSON string
+        jsonContent = inputFile;
+      }
+    } else {
+      return { 
+        content: [{ 
+          type: "text", 
+          text: "❗ Please provide either JSON input or a search pattern for JSON files." 
+        }] 
+      };
     }
+    
+    // Parse JSON
     let parsed;
     try {
-      parsed = JSON.parse(inputFile);
-    } catch {
-      return { content: [{ type: "text", text: "❌ Invalid JSON format." }] };
+      parsed = JSON.parse(jsonContent);
+    } catch (error) {
+      return { 
+        content: [{ 
+          type: "text", 
+          text: `❌ Invalid JSON format: ${(error as any).message}` 
+        }] 
+      };
     }
+    
+    // Normalize structure
     if (Array.isArray(parsed)) {
       parsed = { events: parsed };
     }
+    
     if (!parsed.events || !Array.isArray(parsed.events)) {
-      return { content: [{ type: "text", text: "⚠️ JSON must contain an 'events' array." }] };
+      return { 
+        content: [{ 
+          type: "text", 
+          text: "⚠️ JSON must contain an 'events' array." 
+        }] 
+      };
     }
+    
     const events = parsed.events;
+    
+    if (events.length === 0) {
+      return { 
+        content: [{ 
+          type: "text", 
+          text: "⚠️ No events found in the JSON file." 
+        }] 
+      };
+    }
+    
+    // Generate Java code for each event
     const generateJavaCodeForEvent = (event: any) => {
       const eventName = event.eventIdentifier || event.eventName || "event_unknown";
       const params = event.parameters || [];
+      
       const paramLines = params.map((param: any) => {
         const key = param.parameterIdentifier || param.parameterName || "param_unknown";
-        const val =
-          typeof param.parameterValueExample === "string"
-            ? `"${param.parameterValueExample}"`
-            : param.parameterValueExample !== undefined
-            ? param.parameterValueExample
-            : `"value"`;
+        const val = typeof param.parameterValueExample === "string"
+          ? `"${param.parameterValueExample}"`
+          : param.parameterValueExample !== undefined
+          ? param.parameterValueExample
+          : `"value"`;
         return `eventValues.put("${key}", ${val});`;
       });
+      
       return [
+        `// Event: ${eventName}`,
         `Map<String, Object> eventValues = new HashMap<>();`,
         ...paramLines,
         `AppsFlyerLib.getInstance().logEvent(context, "${eventName}", eventValues);`,
         ``,
       ].join("\n");
     };
+    
     const javaCode = events.map(generateJavaCodeForEvent).join("\n");
+    
     return {
       content: [
         {
           type: "text",
-          text: "```java\n" + javaCode + "\n```",
+          text: [
+            `✅ **Generated Java code for ${events.length} event${events.length === 1 ? '' : 's'}:**`,
+            "",
+            "```java",
+            javaCode,
+            "```",
+            "",
+            "💡 **Usage notes:**",
+            "• Import: `import com.appsflyer.AppsFlyerLib;`",
+            "• Import: `import java.util.HashMap;`",
+            "• Import: `import java.util.Map;`",
+            "• Make sure `context` is available in your scope"
+          ].join("\n"),
         },
       ],
     };
