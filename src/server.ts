@@ -80,6 +80,22 @@ server.tool(
       return updated;
     });
 
+    const devKey = process.env.DEV_KEY;
+    if (!devKey) {
+      return {
+        content: [
+          {
+            type: "text",
+            text: `❌ DevKey environment variable (DEV_KEY) not set.`,
+          },
+        ],
+      };
+    }
+
+    const stepsWithDevKey = steps.integrateAppsFlyerSdk.map((step) =>
+      step.replace("<YOUR-DEV-KEY>", devKey)
+    );
+
     return {
       content: [
         {
@@ -90,6 +106,7 @@ server.tool(
     };
   }
 );
+
 
 server.tool(
   "verifyAppsFlyerSdk",
