@@ -3,6 +3,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { startLogcatStream, logBuffer, stopLogcatStream, extractParam } from "./logcat/stream.js";
+import { extractJsonFromLine } from "./logcat/parse.js";
 import { getParsedAppsflyerFilters } from "./logcat/parse.js";
 import { z } from "zod";
 import { descriptions } from "./constants/descriptions.js";
@@ -91,11 +92,9 @@ server.tool(
   }
 );
 
-
-
 server.tool(
   "verifyAppsFlyerSdk",
-  {}, 
+  {},
   {
     description: descriptions.verifyAppsFlyerSdk,
     intent: intents.verifyAppsFlyerSdk,
@@ -114,9 +113,13 @@ server.tool(
       };
     }
 
-    let logsText = "";
     try {
-      logsText = logBuffer.join("\n");
+      await startLogcatStream("AppsFlyer_");
+      let waited = 0;
+      while (logBuffer.length === 0 && waited < 2000) {
+        await new Promise((res) => setTimeout(res, 200));
+        waited += 200;
+      }
     } catch (err: any) {
       return {
         content: [
@@ -125,35 +128,83 @@ server.tool(
       };
     }
 
-    const appId =
-      extractParam(logsText, "app_id") || extractParam(logsText, "appId");
-    const uid =
-      extractParam(logsText, "uid") || extractParam(logsText, "device_id");
-
-    if (!appId || !uid) {
+    const launchLogs = getParsedAppsflyerFilters("LAUNCH-");
+    if (!launchLogs.length) {
       return {
         content: [
           {
             type: "text",
-            text: `❌ Failed to extract app_id or uid from logs.\napp_id: ${appId}\nuid: ${uid}`,
+            text: `❌ Failed to find any LAUNCH- log with uid.`,
+          },
+        ],
+      };
+    }
+
+    const latestLaunch = launchLogs[launchLogs.length - 1];
+    const uid = latestLaunch.json["uid"] || latestLaunch.json["device_id"];
+    const timestamp = latestLaunch.timestamp;
+
+    if (!uid) {
+      return {
+        content: [
+          {
+            type: "text",
+            text: `❌ LAUNCH log found but no uid/device_id in JSON.`,
+          },
+        ],
+      };
+    }
+
+    let appId: string | undefined;
+    for (const line of logBuffer.slice().reverse()) {
+      const json = extractJsonFromLine(line);
+      if (json?.app_id || json?.appId) {
+        appId = json.app_id || json.appId;
+        break;
+      }
+
+      const match = line.match(/app_id=([a-zA-Z0-9._]+)/);
+      if (match) {
+        appId = match[1];
+        break;
+      }
+    }
+
+    if (!appId) {
+      return {
+        content: [
+          {
+            type: "text",
+            text: `❌ Could not find app_id in logs.`,
           },
         ],
       };
     }
 
     const url = `https://gcdsdk.appsflyer.com/install_data/v4.0/${appId}?devkey=${devKey}&device_id=${uid}`;
-
     try {
       const res = await fetch(url, {
         method: "GET",
         headers: { accept: "application/json" },
       });
-      const json = await res.json();
+      const json = await res.json() as any;
+
+      const afStatus = json.af_status || "Unknown";
+      const installTime = json.install_time || "N/A";
+
       return {
         content: [
           {
             type: "text",
-            text: `✅ SDK Test Succeeded:\n\n${JSON.stringify(json, null, 2)}`,
+            text:
+              `✅ The AppsFlyer SDK verification succeeded.\n` +
+              `SDK is active and responding.\n\n` +
+              `🔹 App ID: ${appId}\n` +
+              `🔹 UID: ${uid}\n` +
+              `🔹 Timestamp: ${timestamp}\n` +
+              `🔹 Status: ${afStatus} install (af_status: "${afStatus}")\n` +
+              `🔹 Install time: ${installTime}\n\n` +
+              `If you need more details or want to check specific events or logs, let me know!`,
           },
         ],
       };

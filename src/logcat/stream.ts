@@ -25,7 +25,6 @@ export async function startLogcatStream(
     deviceId = devices[0];
   }
 
-  // DeviceId validation: ensure device is connected
   if (!devices.includes(deviceId)) {
     logBuffer = [];
     throw new Error(`[Logcat] Device not connected: ${deviceId}`);
