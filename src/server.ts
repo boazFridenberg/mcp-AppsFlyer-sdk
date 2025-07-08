@@ -2,7 +2,7 @@
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { startLogcatStream, getRecentLogs, logBuffer, stopLogcatStream, extractParam, getLogs } from "./logcat/stream.js";
+import { startLogcatStream, logBuffer, stopLogcatStream, extractParam } from "./logcat/stream.js";
 import { getParsedAppsflyerFilters } from "./logcat/parse.js";
 import { z } from "zod";
 import { descriptions } from "./constants/descriptions.js";
@@ -55,8 +55,6 @@ server.tool(
   }
 );
 
-
-
 server.tool(
   "verifyAppsFlyerSdk",
   {},
@@ -80,7 +78,7 @@ server.tool(
 
     let logsText = "";
     try {
-      logsText = await getLogs(500);
+      logsText = logBuffer.join("\n");
     } catch (err: any) {
       return {
         content: [
