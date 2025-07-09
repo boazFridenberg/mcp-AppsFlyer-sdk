@@ -15,7 +15,6 @@
     "author": "Your Name",
     "license": "MIT",
     "dependencies": {
-        "@appsflyer/sdk-mcp-server": "^1.0.7",
         "@kubb/core": "^3.12.1",
         "@modelcontextprotocol/sdk": "^1.0.0",
         "zod": "^3.25.67"
