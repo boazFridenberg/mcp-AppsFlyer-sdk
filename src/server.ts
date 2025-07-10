@@ -10,7 +10,7 @@ import { descriptions } from "./constants/descriptions.js";
 import { intents } from "./constants/intents.js";
 import { keywords } from "./constants/keywords.js";
 import { steps } from "./constants/steps.js";
-import fs from "fs";
+import * as fs from "fs";
 import path from "path";
 import { glob } from "glob";
 import { exec } from "child_process";
@@ -364,8 +364,8 @@ server.tool(
     eventParams: z.record(z.any()).optional(),
     hasListener: z.enum(["yes", "no"]).optional(),
   },
-  async (args) => {
-    const rootDir: string = await new Promise((resolve) => {
+  async (args, extra) => {
+    const rootDir = await new Promise((resolve) => {
       exec("pwd", (error, stdout) => {
         if (error) {
           resolve(process.cwd());
@@ -390,8 +390,9 @@ server.tool(
       dir: string,
       extensions: string[] = [".java", ".kt"]
     ): Promise<string[]> {
-      const resolvedDir = path.resolve(dir);
-      if (!resolvedDir.startsWith(rootDir)) {
+      const resolvedDir = path.resolve(String(dir));
+      const rootDirStr = String(rootDir);
+      if (!resolvedDir.startsWith(rootDirStr)) {
         throw new Error(`Access denied outside project root: ${resolvedDir}`);
       }
 
@@ -399,11 +400,12 @@ server.tool(
       try {
         const entries = await fs.promises.readdir(resolvedDir, { withFileTypes: true });
         for (const entry of entries) {
-          if (ignoredDirs.has(entry.name)) continue;
-          const fullPath = path.join(resolvedDir, entry.name);
-          if (entry.isDirectory()) {
+          const dirent = entry as fs.Dirent;
+          if (ignoredDirs.has(dirent.name)) continue;
+          const fullPath = path.join(String(resolvedDir), dirent.name);
+          if (dirent.isDirectory()) {
             results.push(...(await safeGetProjectFiles(fullPath, extensions)));
-          } else if (extensions.some((ext) => entry.name.endsWith(ext))) {
+          } else if (typeof dirent.name === 'string' && extensions.some((ext) => dirent.name.endsWith(ext))) {
             results.push(fullPath);
           }
         }
@@ -413,7 +415,7 @@ server.tool(
       return results;
     }
 
-    const projectFiles = await safeGetProjectFiles(rootDir);
+    const projectFiles = await safeGetProjectFiles(String(rootDir));
 
     const sdkLine = 'AppsFlyerLib.getInstance().start(this);';
     const sdkFound = await projectFiles.reduce(async (accP, file) => {
@@ -432,11 +434,10 @@ server.tool(
         content: [
           {
             type: "text",
-            text: "⚠️ AppsFlyer SDK not detected in the project.",
-          },
-          {
-            type: "text",
-            text: "Follow these steps to integrate the AppsFlyer SDK:\n\n" + steps.integrateAppsFlyerSdk.join("\n\n"),
+            text:
+              "⚠️ AppsFlyer SDK not detected in the project.\n\n" +
+              "Follow these steps to integrate the AppsFlyer SDK:\n\n" +
+              "\n\nWould you like to run the integration steps automatically? (Reply 'yes' to proceed.)",
           },
         ],
       };
@@ -489,13 +490,13 @@ server.tool(
       includeListener: boolean
     ): string[] {
       const code: string[] = [];
-      code.push("Map<String, Object> eventValues = new HashMap<>();");
+      code.push("Map<String, Object> eventValues = new HashMap<>());");
       for (const [key, value] of Object.entries(eventParams)) {
-        const javaValue = typeof value === "number" ? value : `"${value}"`;
-        code.push(`eventValues.put("${key}", ${javaValue});`);
+        const javaValue = typeof value === "number" ? value : `\"${value}\"`;
+        code.push(`eventValues.put(\"${key}\", ${javaValue});`);
       }
       code.push(
-        `AppsFlyerLib.getInstance().logEvent(getApplicationContext(), "${eventName}", eventValues);`
+        `AppsFlyerLib.getInstance().logEvent(getApplicationContext(), \"${eventName}\", eventValues);`
       );
       if (includeListener) {
         code.push("// Optional: add AppsFlyerRequestListener if needed");
@@ -503,9 +504,7 @@ server.tool(
       }
       return code;
     }
-
     const codeLines = generateJavaCode(eventName, eventParams, hasListener);
-
     return {
       content: [
         {
@@ -524,6 +523,7 @@ server.tool(
     };
   }
 );
+
 
 server.tool(
   "verifyInAppEvent",
