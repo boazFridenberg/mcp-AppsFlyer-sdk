@@ -122,7 +122,6 @@ server.tool(
         waited += 200;
       }
 
-      logsText = logBuffer.join("\n");
     } catch (err: any) {
       return {
         content: [
