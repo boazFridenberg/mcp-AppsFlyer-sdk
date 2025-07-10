@@ -87,8 +87,6 @@ server.tool(
         {
           type: "text",
           text: stepsWithReplacements.join("\n\n"),
-
-          text: stepsWithDevKey.join("\n\n"),
         },
       ],
     };
