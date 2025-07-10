@@ -511,6 +511,16 @@ server.tool(
   }
 )
 
-const transport = new StdioServerTransport();
-await server.connect(transport);
-console.error("MCP server running with stdio transport...");
+async function startServer() {
+  try {
+    const transport = new StdioServerTransport();
+    await server.connect(transport);
+    console.error("MCP server running with stdio transport...");
+  } catch (error) {
+    console.error("Failed to start MCP server:", error);
+    process.exit(1);
+  }
+}
+
+// Start the server
+startServer();
