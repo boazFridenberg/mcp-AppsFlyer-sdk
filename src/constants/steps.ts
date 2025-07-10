@@ -1,8 +1,8 @@
 export const steps = {
-    integrateAppsFlyerSdk: [
-  `⚠️ Use exactly as written below. Do not modify.\n`,
+  integrateAppsFlyerSdk: [
+    `⚠️ Use exactly as written below. Do not modify.\n`,
 
-  `**1. Declare repositories**  
+    `**1. Declare repositories**  
 In the **Project** \`build.gradle\` file, declare the \`mavenCentral()\` repository:
 
 \`\`\`gradle
@@ -11,7 +11,7 @@ repositories {
 }
 \`\`\``,
 
-  `**2. Add Dependencies**  
+    `**2. Add Dependencies**  
 In the **Application** \`build.gradle\` file, add the latest SDK package:
 
 \`\`\`gradle
@@ -21,7 +21,7 @@ dependencies {
 }
 \`\`\``,
 
-  `**3. Setting required permissions**  
+    `**3. Setting required permissions**  
 Add the following permissions inside your \`AndroidManifest.xml\`:
 
 \`\`\`xml
@@ -29,40 +29,43 @@ Add the following permissions inside your \`AndroidManifest.xml\`:
 <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 \`\`\``,
 
-  `**4. Start SDK**  
+    `**4. Start SDK**  
 In your global \`Application\` class, import:
 
 \`\`\`java
 import com.appsflyer.AppsFlyerLib;
 \`\`\``,
 
-  `**5. Add DebugLog before init**  
+    `**5. Add DebugLog before init**  
 Inside the \`onCreate()\` method of your \`Application\` class, call:
 
 \`\`\`java
 AppsFlyerLib.getInstance().setDebugLog(true);
 \`\`\``,
 
-  `**6. Initialize the SDK**  
+    `**6. Initialize the SDK**  
 Inside the \`onCreate()\` method of your \`Application\` class, call:
 
 \`\`\`java
 AppsFlyerLib.getInstance().init("<YOUR-DEV-KEY>", null, this);
 \`\`\``,
 
-  `**7. Start the SDK**  
+    `**7. Start the SDK**  
 Immediately after \`init()\`, call:
 
 \`\`\`java
 AppsFlyerLib.getInstance().start(this);
 \`\`\``,
 
-  `✅ **Done!**  
-Now that the SDK is integrated, you can verify it's working properly.
+    `✅ **Done!**  
+Now that the SDK is integrated, you can verify that it's working properly.
 
-➡️ We recommend running the **verifyAppsFlyerSdk** tool to make sure the SDK is initialized and sending logs correctly.`,
+🚀 **Next step:**  
+Launch your app on a real or virtual device to let the AppsFlyer SDK initialize and send logs.
+
+🔍 **Then:**  
+Run the **verifyAppsFlyerSdk** tool to confirm the integration was successful and data is being sent correctly.`
   ],
-  
   createAppsFlyerLogEvent: (includeListener: boolean): string[] => [
     `🚨 Copy exactly as written below. Do NOT change anything. Every word matters!\n`,
 
