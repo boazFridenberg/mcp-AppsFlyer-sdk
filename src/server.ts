@@ -367,14 +367,17 @@ server.registerTool(
   "createAppsFlyerLogEvent",
   {
     title: "Create AppsFlyer Log Event",
-    description: undefined,
+    description: descriptions.createAppsFlyerLogEvent,
     inputSchema: {
       eventName: z.string().optional(),
       eventParams: z.record(z.any()).optional(),
       wantsExamples: z.enum(["yes", "no"]).optional(),
       hasListener: z.enum(["yes", "no"]).optional(),
     },
-    annotations: {},
+    annotations: {
+      intent: intents.createAppsFlyerLogEvent,
+      keywords: keywords.createAppsFlyerLogEvent,
+    },
   },
   async (args) => {
     const eventName = args.eventName?.trim();
