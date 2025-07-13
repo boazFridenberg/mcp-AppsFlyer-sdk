@@ -1,8 +1,7 @@
 #!/usr/bin/env node
-
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { McpServer} from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { startLogcatStream, logBuffer, stopLogcatStream, extractParam } from "./logcat/stream.js";
+import { startLogcatStream, logBuffer } from "./logcat/stream.js";
 import { extractJsonFromLine } from "./logcat/parse.js";
 import { getParsedAppsflyerFilters } from "./logcat/parse.js";
 import { z } from "zod";
@@ -16,13 +15,15 @@ const server = new McpServer({
   version: "1.0.0",
 });
 
-server.tool(
+server.registerTool(
   "integrateAppsFlyerSdk",
-  {},
   {
+    title: "Integrate AppsFlyer SDK",
     description: descriptions.integrateAppsFlyerSdk,
-    intent: intents.integrateAppsFlyerSdk,
-    keywords: keywords.integrateAppsFlyerSdk,
+    annotations: {
+      intent: intents.integrateAppsFlyerSdk,
+      keywords: keywords.integrateAppsFlyerSdk,
+    },
   },
   async () => {
     const devKey = process.env.DEV_KEY;
@@ -88,13 +89,15 @@ server.tool(
   }
 );
 
-server.tool(
+server.registerTool(
   "verifyAppsFlyerSdk",
-  {},
   {
+    title: "Verify AppsFlyer SDK",
     description: descriptions.verifyAppsFlyerSdk,
-    intent: intents.verifyAppsFlyerSdk,
-    keywords: keywords.verifyAppsFlyerSdk,
+    annotations: {
+      intent: intents.verifyAppsFlyerSdk,
+      keywords: keywords.verifyAppsFlyerSdk,
+    },
   },
   async () => {
     const devKey = process.env.DEV_KEY;
@@ -217,15 +220,18 @@ server.tool(
   }
 );
 
-server.tool(
+server.registerTool(
   "fetchAppsflyerLogs",
   {
-    deviceId: z.string().optional(),
-  },
-  {
+    title: "Fetch AppsFlyer Logs",
     description: descriptions.fetchAppsflyerLogs,
-    intent: intents.fetchAppsflyerLogs,
-    keywords: keywords.fetchAppsflyerLogs,
+    inputSchema: {
+      deviceId: z.string().optional(),
+    },
+    annotations: {
+      intent: intents.fetchAppsflyerLogs,
+      keywords: keywords.fetchAppsflyerLogs,
+    },
   },
   async ({ deviceId }) => {
     try {
@@ -261,15 +267,18 @@ function createLogTool(
   toolName: keyof typeof descriptions,
   keyword: string
 ): void {
-  server.tool(
+  server.registerTool(
     toolName,
     {
-      deviceId: z.string().optional(),
-    },
-    {
+      title: toolName.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase()).trim(),
       description: descriptions[toolName],
-      intent: intents[toolName],
-      keywords: keywords[toolName],
+      inputSchema: {
+        deviceId: z.string().optional(),
+      },
+      annotations: {
+        intent: intents[toolName],
+        keywords: keywords[toolName],
+      },
     },
     async ({ deviceId }) => {
       await startLogcatStream("AppsFlyer_", deviceId);
@@ -333,13 +342,15 @@ createLogTool("getInAppLogs", "INAPP-");
 createLogTool("getLaunchLogs", "LAUNCH-");
 createLogTool("getDeepLinkLogs", "deepLink");
 
-server.tool(
+server.registerTool(
   "getAppsflyerErrors",
-  {},
   {
+    title: "Get AppsFlyer Errors",
     description: descriptions.getAppsflyerErrors,
-    intent: intents.getAppsflyerErrors,
-    keywords: keywords.getAppsflyerErrors,
+    annotations: {
+      intent: intents.getAppsflyerErrors,
+      keywords: keywords.getAppsflyerErrors,
+    },
   },
   async ({ }) => {
     const errorKeywords = keywords.getAppsflyerErrors;
@@ -352,13 +363,18 @@ server.tool(
   }
 );
 
-server.tool(
+server.registerTool(
   "createAppsFlyerLogEvent",
   {
-    eventName: z.string().optional(),
-    eventParams: z.record(z.any()).optional(),
-    wantsExamples: z.enum(["yes", "no"]).optional(),
-    hasListener: z.enum(["yes", "no"]).optional(),
+    title: "Create AppsFlyer Log Event",
+    description: undefined,
+    inputSchema: {
+      eventName: z.string().optional(),
+      eventParams: z.record(z.any()).optional(),
+      wantsExamples: z.enum(["yes", "no"]).optional(),
+      hasListener: z.enum(["yes", "no"]).optional(),
+    },
+    annotations: {},
   },
   async (args) => {
     const eventName = args.eventName?.trim();
@@ -475,13 +491,16 @@ server.tool(
     };
   }
 );
-server.tool(
+
+server.registerTool(
   "verifyInAppEvent",
-  {},
   {
+    title: "Verify In-App Event",
     description: descriptions.verifyInAppEvent,
-    intent: intents.verifyInAppEvent,
-    keywords: keywords.verifyInAppEvent,
+    annotations: {
+      intent: intents.verifyInAppEvent,
+      keywords: keywords.verifyInAppEvent,
+    },
   },
   async ({ }) => {
     const logs = logBuffer;
@@ -500,10 +519,7 @@ server.tool(
           type: "text",
           text: allPresent
             ? "✅ Event `af_level_achieved` was successfully logged. All required log entries were found."
-            : `❌ The event may not have been logged correctly. Results:
-- Has Event Name: ${hasEventName}
-- Has Event Value: ${hasEventValue}
-- Has Endpoint: ${hasEndpoint}`,
+            : `❌ The event may not have been logged correctly. Results:\n- Has Event Name: ${hasEventName}\n- Has Event Value: ${hasEventValue}\n- Has Endpoint: ${hasEndpoint}`,
         },
         { type: "text", text: `✅ Event created successfully!` },
       ],
