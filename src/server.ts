@@ -9,6 +9,7 @@ import { descriptions } from "./constants/descriptions.js";
 import { intents } from "./constants/intents.js";
 import { keywords } from "./constants/keywords.js";
 import { steps } from "./constants/steps.js";
+import { extractAppsflyerDeeplinkInfo } from "./logcat/parse.js";
 
 const server = new McpServer({
   name: "appsflyer-logcat-mcp-server",
@@ -370,6 +371,7 @@ server.tool(
     };
   }
 );
+
 server.tool(
   "verifyInAppEvent",
   {},
@@ -404,8 +406,91 @@ server.tool(
       ],
     };
   }
-)
+);
+
+server.tool(
+  "DetectAppsFlyerDeepLink",
+  {},
+  {
+    description: "Detect whether a deep link was triggered from AppsFlyer logs",
+    intent: "detect appsflyer deep link",
+    keywords: ["deeplink", "deep link", "appsFlyer", "detect", "ddl", "udl"],
+  },
+  async () => {
+    const logsText = getRecentLogs();
+    if (!logsText || logsText.trim() === "") {
+      return {
+        content: [{ type: "text", text: "⚠️ No logs found in buffer. Try fetching logs again." }],
+      };
+    }
+
+    const logs = logsText.split("\n");
+    const info = extractAppsflyerDeeplinkInfo(logs);
+
+    if (!info.found) {
+      return {
+        content: [
+          { type: "text", text: "❌ No deep link detected in the logs." },
+        ],
+      };
+    }
+
+    return {
+      content: [
+        {
+          type: "text",
+          text: [
+            "✅ Deep link detected!",
+            `• Source: ${info.source}`,
+            `• Deferred: ${info.isDeferred ? "Yes" : "No"}`,
+            `• Value: ${info.deepLinkValue || "None"}`,
+            `• Referrer ID: ${info.referrerId || "None"}`,
+            info.error ? `⚠️ Parse error: ${info.error}` : "",
+          ].filter(Boolean).join("\n"),
+        },
+      ],
+    };
+  }
+);
+
+server.tool(
+  "VerifyAppsFlyerDeepLinkHandled",
+  {},
+  {
+    description: "Verify that the deep link triggered a flow in the app",
+    intent: "verify appsflyer deep link handling",
+    keywords: ["deeplink", "verify", "appsFlyer", "flow", "handled"],
+  },
+  async () => {
+    if (logBuffer.length === 0) {
+      return {
+        content: [{ type: "text", text: "⚠️ No logs available for analysis." }],
+      };
+    }
+
+    const logText = logBuffer.join("\n");
+
+    const hasActivity = /Starting activity/.test(logText);
+    const hasRouting = /navigate|redirect|route to/.test(logText.toLowerCase());
+    const hasSpecificDeeplinkValue = /apples|deep_link_value/.test(logText);
+
+    const allFound = hasActivity && hasRouting && hasSpecificDeeplinkValue;
+
+    return {
+      content: [
+        {
+          type: "text",
+          text: allFound
+            ? "✅ Deep link seems to have triggered in-app flow (activity start + routing + value found)."
+            : `❌ Deep link may not have triggered the app flow.\n- Found activity: ${hasActivity}\n- Found routing: ${hasRouting}\n- Found value: ${hasSpecificDeeplinkValue}`,
+        },
+      ],
+    };
+  }
+);
+
 
 const transport = new StdioServerTransport();
 await server.connect(transport);
 console.log("MCP server running with stdio transport...");
+
