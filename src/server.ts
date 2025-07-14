@@ -88,7 +88,6 @@ server.registerTool(
     };
   }
 );
-
 server.registerTool(
   "verifyAppsFlyerSdk",
   {
@@ -130,28 +129,31 @@ server.registerTool(
       };
     }
 
+    const conversionLogs = getParsedAppsflyerFilters("CONVERSION-");
     const launchLogs = getParsedAppsflyerFilters("LAUNCH-");
-    if (!launchLogs.length) {
+
+    const relevantLog = conversionLogs[conversionLogs.length - 1] || launchLogs[launchLogs.length - 1];
+
+    if (!relevantLog) {
       return {
         content: [
           {
             type: "text",
-            text: `❌ Failed to find any LAUNCH- log with uid.`,
+            text: `❌ Failed to find any CONVERSION- or LAUNCH- log with uid.`,
           },
         ],
       };
     }
 
-    const latestLaunch = launchLogs[launchLogs.length - 1];
-    const uid = latestLaunch.json["uid"] || latestLaunch.json["device_id"];
-    const timestamp = latestLaunch.timestamp;
+    const uid = relevantLog.json["uid"] || relevantLog.json["device_id"];
+    const timestamp = relevantLog.timestamp;
 
     if (!uid) {
       return {
         content: [
           {
             type: "text",
-            text: `❌ LAUNCH log found but no uid/device_id in JSON.`,
+            text: `❌ Log found but missing uid or device_id.`,
           },
         ],
       };
@@ -189,7 +191,7 @@ server.registerTool(
         method: "GET",
         headers: { accept: "application/json" },
       });
-      const json = await res.json() as any;
+      const json = (await res.json()) as any;
 
       const afStatus = json.af_status || "Unknown";
       const installTime = json.install_time || "N/A";
