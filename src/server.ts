@@ -289,7 +289,7 @@ function createLogTool(
       await startLogcatStream("AppsFlyer_", deviceId);
       const logs = getParsedAppsflyerFilters(keyword);
 
-      if (keyword === "CONVERSION-" || keyword === "LAUNCH-") {
+      if (keyword === "CONVERSION-" || keyword === "LAUNCH-" || keyword === "deepLink") {
         if (!logs.length) {
           return {
             content: [
