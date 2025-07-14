@@ -94,12 +94,15 @@ server.registerTool(
   {
     title: "Verify AppsFlyer SDK",
     description: descriptions.verifyAppsFlyerSdk,
+    inputSchema: {
+      deviceId: z.string().optional(),
+    },
     annotations: {
       intent: intents.verifyAppsFlyerSdk,
       keywords: keywords.verifyAppsFlyerSdk,
     },
   },
-  async () => {
+  async ({ deviceId }) => {
     const devKey = process.env.DEV_KEY;
     if (!devKey) {
       return {
@@ -113,7 +116,7 @@ server.registerTool(
     }
 
     try {
-      await startLogcatStream("AppsFlyer_");
+      await startLogcatStream("AppsFlyer_", deviceId);
       let waited = 0;
       while (logBuffer.length === 0 && waited < 2000) {
         await new Promise((res) => setTimeout(res, 200));
