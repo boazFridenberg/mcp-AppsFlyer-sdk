@@ -13,7 +13,6 @@ import { steps } from "./constants/steps.js";
 import * as fs from "fs";
 import path from "path";
 import { glob } from "glob";
-import { Dirent } from "fs";
 import { exec } from "child_process";
 
 const server = new McpServer({
@@ -360,48 +359,68 @@ server.tool(
 );
 
 
-
 server.tool(
   "createAppsFlyerLogEvent",
   {
     eventName: z.string().optional(),
-    eventParams: z.string().optional(), // changed from z.record to string
+    eventParams: z.record(z.any()).optional(),
     hasListener: z.enum(["yes", "no"]).optional(),
   },
   async (args, extra) => {
-    const rootDir = await new Promise<string>((resolve) => {
-      exec("pwd", (error: Error | null, stdout: string) => {
-        resolve(error ? process.cwd() : stdout.trim());
+    const rootDir = await new Promise((resolve) => {
+      exec("pwd", (error, stdout) => {
+        if (error) {
+          resolve(process.cwd());
+        } else {
+          resolve(stdout.trim());
+        }
       });
     });
 
     const ignoredDirs = new Set([
-      ".Trash", "node_modules", ".git", "build", "out", ".gradle", "Library", "__MACOSX",
+      ".Trash",
+      "node_modules",
+      ".git",
+      "build",
+      "out",
+      ".gradle",
+      "Library",
+      "__MACOSX",
     ]);
 
-    async function safeGetProjectFiles(dir: string, extensions: string[] = [".java", ".kt"]): Promise<string[]> {
-      const resolvedDir = path.resolve(dir);
-      if (!resolvedDir.startsWith(rootDir)) throw new Error(`Access denied: ${resolvedDir}`);
+    async function safeGetProjectFiles(
+      dir: string,
+      extensions: string[] = [".java", ".kt"]
+    ): Promise<string[]> {
+      const resolvedDir = path.resolve(String(dir));
+      const rootDirStr = String(rootDir);
+      if (!resolvedDir.startsWith(rootDirStr)) {
+        throw new Error(`Access denied outside project root: ${resolvedDir}`);
+      }
 
       let results: string[] = [];
       try {
         const entries = await fs.promises.readdir(resolvedDir, { withFileTypes: true });
         for (const entry of entries) {
-          if (ignoredDirs.has(entry.name)) continue;
-          const fullPath = path.join(resolvedDir, entry.name);
-          if (entry.isDirectory()) {
+          const dirent = entry as fs.Dirent;
+          if (ignoredDirs.has(dirent.name)) continue;
+          const fullPath = path.join(String(resolvedDir), dirent.name);
+          if (dirent.isDirectory()) {
             results.push(...(await safeGetProjectFiles(fullPath, extensions)));
-          } else if (extensions.some((ext) => entry.name.endsWith(ext))) {
+          } else if (typeof dirent.name === 'string' && extensions.some((ext) => dirent.name.endsWith(ext))) {
             results.push(fullPath);
           }
         }
-      } catch {}
+      } catch {
+        // ignore permission errors
+      }
       return results;
     }
 
-    const projectFiles = await safeGetProjectFiles(rootDir);
+    const projectFiles = await safeGetProjectFiles(String(rootDir));
+
     const sdkLine = 'AppsFlyerLib.getInstance().start(this);';
-    const sdkFound = await projectFiles.reduce<Promise<boolean>>(async (accP, file) => {
+    const sdkFound = await projectFiles.reduce(async (accP, file) => {
       const acc = await accP;
       if (acc) return true;
       try {
@@ -417,70 +436,86 @@ server.tool(
         content: [
           {
             type: "text",
-            text: "⚠️ AppsFlyer SDK not detected. Run `integrateAppsFlyerSdk` to continue.",
+            text:
+              "⚠️ AppsFlyer SDK not detected in the project.\n\n" +
+              "Follow these steps to integrate the AppsFlyer SDK:\n\n" +
+              "\n\nWould you like to run the integration steps automatically? (Reply 'yes' to proceed.)",
           },
         ],
       };
     }
 
     const eventName = args.eventName?.trim();
-    const rawParams = args.eventParams?.trim() || "";
+    const eventParams = args.eventParams || {};
     const hasListener = args.hasListener?.toLowerCase() === "yes";
+
+    const missingValueParams = Object.entries(eventParams)
+      .filter(([_, v]) => v === undefined || v === null || v === "")
+      .map(([k]) => k);
 
     if (!eventName) {
       return {
         content: [
-          { type: "text", text: "❗ Missing event name. Please provide eventName." },
+          {
+            type: "text",
+            text: "❗ Missing event name. Please provide eventName to continue.",
+          },
         ],
       };
     }
 
-    // 🔍 Parse params from raw string: "key=value, key2=value2"
-    const eventParams: Record<string, any> = {};
-    const paramLines = rawParams.split(/[,\n]+/);
-    for (const line of paramLines) {
-      const [k, v] = line.split("=").map(s => s.trim());
-      if (k && v) {
-        const parsedVal = isNaN(Number(v)) ? v : Number(v);
-        eventParams[k] = parsedVal;
-      }
-    }
-
-    if (Object.keys(eventParams).length === 0) {
+    if (Object.entries(eventParams).length === 0) {
       return {
         content: [
-          { type: "text", text: "❗ Missing event parameters. Please provide at least one key=value pair." },
+          {
+            type: "text",
+            text: "❗ Missing event parameters. Please provide at least one key-value pair.",
+          },
         ],
       };
     }
 
-    function generateJavaCode(eventName: string, eventParams: Record<string, any>, includeListener: boolean): string[] {
+    if (missingValueParams.length > 0) {
+      return {
+        content: [
+          {
+            type: "text",
+            text: `❗ The following parameters are missing values: ${missingValueParams.join(", ")}.`,
+          },
+        ],
+      };
+    }
+
+    function generateJavaCode(
+      eventName: string,
+      eventParams: Record<string, any>,
+      includeListener: boolean
+    ): string[] {
       const code: string[] = [];
-      code.push("Map<String, Object> eventValues = new HashMap<>();");
+      code.push("Map<String, Object> eventValues = new HashMap<>());");
       for (const [key, value] of Object.entries(eventParams)) {
-        const javaVal = typeof value === "number" ? value : `\"${value}\"`;
-        code.push(`eventValues.put(\"${key}\", ${javaVal});`);
+        const javaValue = typeof value === "number" ? value : `\"${value}\"`;
+        code.push(`eventValues.put(\"${key}\", ${javaValue});`);
       }
+      code.push(
+        `AppsFlyerLib.getInstance().logEvent(getApplicationContext(), \"${eventName}\", eventValues);`
+      );
       if (includeListener) {
-        code.push(
-          `AppsFlyerLib.getInstance().logEvent(getApplicationContext(), \"${eventName}\", eventValues, new AppsFlyerRequestListener() {`,
-          `  @Override public void onSuccess() { /* success */ }`,
-          `  @Override public void onError(int code, String msg) { /* error */ }`,
-          `});`
-        );
-      } else {
-        code.push(`AppsFlyerLib.getInstance().logEvent(getApplicationContext(), \"${eventName}\", eventValues);`);
+        code.push("// Optional: add AppsFlyerRequestListener if needed");
+        code.push("// AppsFlyerLib.getInstance().logEvent(..., new AppsFlyerRequestListener() { ... });");
       }
       return code;
     }
-
     const codeLines = generateJavaCode(eventName, eventParams, hasListener);
-
     return {
       content: [
         {
           type: "text",
-          text: `✅ Event generated:\nName: ${eventName}\nParameters: ${JSON.stringify(eventParams, null, 2)}\nListener: ${hasListener}`,
+          text: `✅ Event is ready:\n\nName: ${eventName}\nParameters: ${JSON.stringify(
+            eventParams,
+            null,
+            2
+          )}\nListener included: ${hasListener ? "yes" : "no"}`,
         },
         {
           type: "text",
@@ -490,7 +525,6 @@ server.tool(
     };
   }
 );
-
 
 
 server.tool(
