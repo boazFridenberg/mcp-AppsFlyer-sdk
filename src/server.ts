@@ -289,13 +289,13 @@ function createLogTool(
       await startLogcatStream("AppsFlyer_", deviceId);
       const logs = getParsedAppsflyerFilters(keyword);
 
-      if (keyword === "CONVERSION-") {
+      if (keyword === "CONVERSION-" || keyword === "LAUNCH-") {
         if (!logs.length) {
           return {
             content: [
               {
                 type: "text",
-                text: "No conversion log entry found.",
+                text: "No logs entry found.",
               },
             ],
           };
@@ -327,7 +327,6 @@ function createLogTool(
         };
       }
 
-      // default behavior for other keywords
       return {
         content: [
           {
