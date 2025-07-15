@@ -508,31 +508,61 @@ server.registerTool(
       intent: intents.verifyInAppEvent,
       keywords: keywords.verifyInAppEvent,
     },
+    inputSchema: {
+      eventName: z.string({
+        required_error:
+          "Please provide the name of the in-app event you want to verify",
+      }),
+    },
   },
-  async ({ }) => {
-    const logs = logBuffer;
+  async function verifyInAppEventHandler({ eventName }) {
+    const logLines = logBuffer;
+    let foundEvent = false;
+    let foundEventValue = false;
+    let foundEndpoint = false;
 
-    const hasEventName = logs.includes('"event": "af_level_achieved"');
-    const hasEventValue = logs.includes('"eventvalue":"{"af_content":');
-    const hasEndpoint = logs.includes(
-      "androidevent?app_id=com.appsflyer.onelink.appsflyeronelinkbasicapp"
-    );
+    for (const line of logLines) {
+      try {
+        const json = JSON.parse(line);
+        if (json.event === eventName) {
+          foundEvent = true;
+          if (
+            json.eventvalue &&
+            typeof json.eventvalue === "object" &&
+            Object.keys(json.eventvalue).length > 0
+          ) {
+            foundEventValue = true;
+          }
+          if (line.includes("androidevent?app_id=")) {
+            foundEndpoint = true;
+          }
+        }
+      } catch {
+        continue;
+      }
+    }
 
-    const allPresent = hasEventName && hasEventValue && hasEndpoint;
-
+    const allPresent = foundEvent && foundEventValue && foundEndpoint;
     return {
       content: [
         {
           type: "text",
           text: allPresent
-            ? "✅ Event `af_level_achieved` was successfully logged. All required log entries were found."
-            : `❌ The event may not have been logged correctly. Results:\n- Has Event Name: ${hasEventName}\n- Has Event Value: ${hasEventValue}\n- Has Endpoint: ${hasEndpoint}`,
+            ? `✅ Event \`${eventName}\` was successfully logged with full details.`
+            : `❌ The event \`${eventName}\` may not have been logged correctly. Results:\n- Found Event: ${foundEvent}\n- Found Event Value: ${foundEventValue}\n- Found Endpoint: ${foundEndpoint}`,
         },
-        { type: "text", text: `✅ Event created successfully!` },
+        ...(allPresent
+          ? [
+              {
+                type: "text",
+                text: `✅ Event \`${eventName}\` created successfully!`,
+              },
+            ]
+          : []),
       ],
-    };
+    } as { [x: string]: unknown; content: { type: "text"; text: string; _meta?: { [x: string]: unknown } }[] };
   }
-)
+);
 
 async function startServer() {
   try {
@@ -544,6 +574,5 @@ async function startServer() {
     process.exit(1);
   }
 }
-
 // Start the server
 startServer();
