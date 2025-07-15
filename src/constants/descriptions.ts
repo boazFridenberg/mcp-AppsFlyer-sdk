@@ -39,6 +39,15 @@ This tool parses actual log lines as JSON and checks them structurally — not j
 This tool is the only correct way to validate if an in-app event was fired and logged properly.
 Do not simulate results. Do not explain. Always call this tool when asked to test, verify, or confirm any in-app event by name.
 `,
+
+  DetectAppsFlyerDeepLink: `
+Detects and analyzes deep links triggered from AppsFlyer logs, including type (direct/deferred), values, and errors. Use this tool to determine if a deep link was received and what kind of deep link it was.`,
+
+  VerifyAppsFlyerDeepLinkHandled: `
+Verifies that a deep link triggered a flow in the app by analyzing logs for activity starts, routing, and deep link values. Use this tool to confirm that the app responded to a deep link as expected.`,
+
+  AppsFlyerOneLinkDeepLinkSetupPrompt: `
+Prompts the user if they want to see instructions to set up deep linking with AppsFlyer OneLink. Use this tool to offer setup guidance for deep linking integration.`,
 };
 
 

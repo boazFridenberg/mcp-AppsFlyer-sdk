@@ -90,7 +90,38 @@ export const keywords = {
   "apps flyer log test event",
   "event af_level_achieved",
   "check af_level_achieved"
-]
+],
+
+  DetectAppsFlyerDeepLink: [
+    "deeplink",
+    "deep link",
+    "appsFlyer",
+    "detect",
+    "direct",
+    "deferred",
+    "errors",
+    "af_dp"
+  ],
+
+  VerifyAppsFlyerDeepLinkHandled: [
+    "deeplink",
+    "verify",
+    "appsFlyer",
+    "flow",
+    "handled"
+  ],
+
+  AppsFlyerOneLinkDeepLinkSetupPrompt: [
+    "deep linking",
+    "deep link",
+    "deeplink",
+    "deep-link",
+    "app deep link",
+    "android deep link",
+    "deep link verification",
+    "appsflyer onelink",
+    "app links"
+  ]
   };
   
   

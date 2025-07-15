@@ -566,23 +566,18 @@ server.registerTool(
   }
 );
 
-server.tool(
+server.registerTool(
   "AppsFlyerOneLinkDeepLinkSetupPrompt",
-  { wantsInstructions: z.enum(["yes", "no"]).optional() },
   {
-    description: "Ask user if they want to see instructions to setup deep linking with AppsFlyer OneLink",
-    intent: "ask if user wants deep link setup instructions",
-    keywords: [
-      "deep linking",
-      "deep link",
-      "deeplink",
-      "deep-link",
-      "app deep link",
-      "android deep link",
-      "deep link verification",
-      "appsflyer onelink",
-      "app links",
-    ],
+    title: "AppsFlyer OneLink Deep Link Setup Prompt",
+    description: descriptions.AppsFlyerOneLinkDeepLinkSetupPrompt,
+    inputSchema: {
+      wantsInstructions: z.enum(["yes", "no"]).optional(),
+    },
+    annotations: {
+      intent: intents.AppsFlyerOneLinkDeepLinkSetupPrompt,
+      keywords: keywords.AppsFlyerOneLinkDeepLinkSetupPrompt,
+    },
   },
   async (args) => {
     if (!args.wantsInstructions) {
@@ -759,16 +754,19 @@ AppsFlyerLib.getInstance().subscribeForDeepLink(new DeepLinkListener() {
   }
 );
 
-server.tool(
+server.registerTool(
   "DetectAppsFlyerDeepLink",
-  {},
   {
-    description: "Detect and analyze deep links triggered from AppsFlyer logs, including type, values, and errors",
-    intent: "detect appsflyer deep link",
-    keywords: ["deeplink", "deep link", "appsFlyer", "detect", "direct", "deferred", "errors", "af_dp"],
+    title: "Detect AppsFlyer Deep Link",
+    description: descriptions.DetectAppsFlyerDeepLink,
+    inputSchema: {},
+    annotations: {
+      intent: intents.DetectAppsFlyerDeepLink,
+      keywords: keywords.DetectAppsFlyerDeepLink,
+    },
   },
   async () => {
-    const logsText = getRecentLogs();
+    const logsText = logBuffer.join("\n");
     if (!logsText || logsText.trim() === "") {
       return {
         content: [{ type: "text", text: "⚠️ No logs found in buffer. Try fetching logs again." }],
@@ -798,17 +796,17 @@ server.tool(
 
     // Detect Direct Deep Link
     const hasOnDeepLinkingSuccess = /onDeepLinking.*SUCCESS/i.test(logText);
-    const hasAfDp = /af_dp[=:"]/i.test(logText);
+    const hasAfDp = /af_dp[=:\"]/i.test(logText);
     const hasAfDeeplinkTrue = /af_deeplink\s*[:=]\s*true/i.test(logText);
     const isDirect = (hasOnDeepLinkingSuccess || hasAfDp || hasAfDeeplinkTrue) && !isDeferred;
 
     // Find all deep link entries in logs
-    const deeplinkLines = logs.filter((line) =>
+    const deeplinkLines = logs.filter((line: string) =>
       /deep_link_value|af_dp|onDeepLinking/i.test(line)
     );
 
     // Find deep link errors
-    const deeplinkErrors = logs.filter((line) =>
+    const deeplinkErrors = logs.filter((line: string) =>
       /onDeepLinking.*FAILURE|error parsing|invalid|deep_link.*null/i.test(line)
     );
 
@@ -836,13 +834,16 @@ server.tool(
 );
 
 
-server.tool(
+server.registerTool(
   "VerifyAppsFlyerDeepLinkHandled",
-  {},
   {
-    description: "Verify that the deep link triggered a flow in the app",
-    intent: "verify appsflyer deep link handling",
-    keywords: ["deeplink", "verify", "appsFlyer", "flow", "handled"],
+    title: "Verify AppsFlyer Deep Link Handled",
+    description: descriptions.VerifyAppsFlyerDeepLinkHandled,
+    inputSchema: {},
+    annotations: {
+      intent: intents.VerifyAppsFlyerDeepLinkHandled,
+      keywords: keywords.VerifyAppsFlyerDeepLinkHandled,
+    },
   },
   async () => {
     if (logBuffer.length === 0) {

@@ -59,4 +59,13 @@ It also take the dev key from env in mcp.json — and only asks the user if not 
     "If the user asks about in-app event logging, code, or examples for logEvent, always use this tool.",
     "If the user asks about sending events to AppsFlyer in any way, never explain manually. Always call this tool first.",
   ],
+
+  DetectAppsFlyerDeepLink: `
+If the user asks to detect, analyze, or debug deep links (direct or deferred) from AppsFlyer logs, use this tool immediately. Do not attempt to analyze logs manually or explain deep link types yourself.`,
+
+  VerifyAppsFlyerDeepLinkHandled: `
+If the user wants to verify that a deep link triggered a flow in the app, use this tool to confirm the app responded to the deep link. Do not try to infer or simulate the flow manually.`,
+
+  AppsFlyerOneLinkDeepLinkSetupPrompt: `
+If the user asks about setting up deep linking with AppsFlyer OneLink, use this tool to prompt for setup instructions. Do not generate setup steps yourself.`,
 };
