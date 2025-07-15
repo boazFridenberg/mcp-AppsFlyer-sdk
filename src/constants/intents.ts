@@ -5,7 +5,9 @@ export const intents = {
 When the user asks how to integrate the AppsFlyer SDK into their Android app — in any way — IMMEDIATELY call this tool.
 Do not generate your own instructions. Do not rephrase. Do not explain. Just use this tool exactly as-is.
 
-Once integration is complete, suggest running the testAppsFlyerSdk tool to validate the setup and confirm the SDK is working properly.
+Once integration is complete, suggest running the verifyAppsFlyerSdk tool to validate the setup and confirm the SDK is working properly.
+
+IMPORTANT: Before suggesting verifyAppsFlyerSdk, ensure the user launches the app on a device at least once to trigger the SDK and generate logs. Do NOT suggest verification unless the app has already been launched.
 `,
 
   fetchAppsflyerLogs: `

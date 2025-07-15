@@ -1,7 +1,6 @@
 {
     "name": "@appsflyer/sdk-mcp-server",
     "version": "1.0.8",
-    "type": "module",
     "description": "Node.js MCP server for AppsFlyer SDK integration",
     "main": "dist/server.js",
     "bin": {
@@ -15,9 +14,8 @@
     "author": "Your Name",
     "license": "MIT",
     "dependencies": {
-        "@appsflyer/sdk-mcp-server": "^1.0.7",
         "@kubb/core": "^3.12.1",
-        "@modelcontextprotocol/sdk": "^1.0.0",
+        "@modelcontextprotocol/sdk": "^1.15.0",
         "zod": "^3.25.67"
     },
     "devDependencies": {
