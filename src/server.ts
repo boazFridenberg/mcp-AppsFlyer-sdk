@@ -382,7 +382,6 @@ server.registerTool(
     inputSchema: {
       eventName: z.string().optional(),
       eventParams: z.record(z.any()).optional(),
-      wantsExamples: z.enum(["yes", "no"]).optional(),
       hasListener: z.enum(["yes", "no"]).optional(),
     },
     annotations: {
@@ -444,39 +443,12 @@ server.registerTool(
 
     const projectFiles = await safeGetProjectFiles(String(rootDir));
 
-    const sdkLine = 'AppsFlyerLib.getInstance().start(this);';
-    const sdkFound = await projectFiles.reduce(async (accP, file) => {
-      const acc = await accP;
-      if (acc) return true;
-      try {
-        const content = await fs.promises.readFile(file, "utf8");
-        return content.includes(sdkLine);
-      } catch {
-        return false;
-      }
-    }, Promise.resolve(false));
-
-    if (!sdkFound) {
-      return {
-        content: [
-          {
-            type: "text",
-            text:
-              "⚠️ AppsFlyer SDK not detected in the project.\n\n" +
-              "Follow these steps to integrate the AppsFlyer SDK:\n\n" +
-              "\n\nWould you like to run the integration steps automatically? (Reply 'yes' to proceed.)",
-          },
-        ],
-      };
-    }
+    
 
     const eventName = args.eventName?.trim();
     const eventParams = args.eventParams || {};
     const hasListener = args.hasListener?.toLowerCase() === "yes";
 
-    const missingValueParams = Object.entries(eventParams)
-      .filter(([_, v]) => v === undefined || v === null || v === "")
-      .map(([k]) => k);
 
     if (!eventName) {
       return {
@@ -494,18 +466,7 @@ server.registerTool(
         content: [
           {
             type: "text",
-            text: "❗ Missing event parameters. Please provide at least one key-value pair.",
-          },
-        ],
-      };
-    }
-
-    if (missingValueParams.length > 0) {
-      return {
-        content: [
-          {
-            type: "text",
-            text: `❗ The following parameters are missing values: ${missingValueParams.join(", ")}.`,
+            text: "❗ Missing event parameters. Please provide at least one parametr.",
           },
         ],
       };
