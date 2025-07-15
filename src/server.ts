@@ -409,12 +409,205 @@ server.tool(
 );
 
 server.tool(
+  "AppsFlyerOneLinkDeepLinkSetupPrompt",
+  { wantsInstructions: z.enum(["yes", "no"]).optional() },
+  {
+    description: "Ask user if they want to see instructions to setup deep linking with AppsFlyer OneLink",
+    intent: "ask if user wants deep link setup instructions",
+    keywords: [
+      "deep linking",
+      "deep link",
+      "deeplink",
+      "deep-link",
+      "app deep link",
+      "android deep link",
+      "deep link verification",
+      "appsflyer onelink",
+      "app links",
+    ],
+  },
+  async (args) => {
+    if (!args.wantsInstructions) {
+      return {
+        content: [
+          {
+            type: "text",
+            text: "Do you want instructions to setup deep linking with AppsFlyer OneLink? (yes/no)",
+          },
+        ],
+      };
+    }
+
+    if (args.wantsInstructions === "no") {
+      return {
+        content: [
+          {
+            type: "text",
+            text: "OK, no problem. Let me know if you need anything else!",
+          },
+        ],
+      };
+    }
+
+    return {
+      content: [
+        {
+          type: "text",
+          text: `✅ Guide to integrate Deep Linking with AppsFlyer OneLink (example URL: https://onelink-basic-app.onelink.me/H5hv/apples)
+
+1. **Update AndroidManifest.xml**
+
+Add this intent-filter to your MainActivity:
+
+\`\`\`xml
+<activity
+    android:name=".MainActivity"
+    android:exported="true"
+    android:launchMode="singleTask">
+    
+    <intent-filter android:autoVerify="true">
+        <action android:name="android.intent.action.VIEW" />
+        <category android:name="android.intent.category.DEFAULT" />
+        <category android:name="android.intent.category.BROWSABLE" />
+        
+        <data
+            android:scheme="https"
+            android:host="onelink-basic-app.onelink.me"
+            android:pathPrefix="/H5hv/apples" />
+    </intent-filter>
+</activity>
+\`\`\`
+
+2. **Initialize AppsFlyer SDK**
+
+Initialize the SDK early in your app (e.g., in Application.onCreate or MainActivity.onCreate):
+
+\`\`\`java
+AppsFlyerLib.getInstance().setOneLinkCustomDomain("he.wikipedia.org"); // Replace with your domain
+AppsFlyerLib.getInstance().start(getApplicationContext(), "YOUR_APPSFLYER_DEV_KEY");
+\`\`\`
+
+3. **Handle Deep Link Intent in MainActivity**
+
+Process the Intent containing the deep link URI:
+
+\`\`\`java
+@Override
+protected void onNewIntent(Intent intent) {
+    super.onNewIntent(intent);
+    Uri data = intent.getData();
+    if (data != null) {
+        String path = data.getPath();
+        if ("/H5hv/apples".equals(path)) {
+            // Add your custom logic here
+        }
+    }
+}
+\`\`\`
+
+4. **Testing**
+
+- Use adb to test the deep link:
+
+\`\`\`bash
+adb shell am start -a android.intent.action.VIEW -d "https://onelink-basic-app.onelink.me/H5hv/apples" your.package.name
+\`\`\`
+
+- Or test via AppsFlyer OneLink test links from the dashboard.
+
+5. **(Optional) Upload assetlinks.json**
+
+Upload the file here to enable App Links verification:
+
+\`\`\`
+https://onelink-basic-app.onelink.me/.well-known/assetlinks.json
+\`\`\`
+
+6. **Imports for Deep Linking**
+
+\`\`\`java
+import com.appsflyer.deeplink.DeepLink;
+import com.appsflyer.deeplink.DeepLinkListener;
+import com.appsflyer.deeplink.DeepLinkResult;
+\`\`\`
+
+7. **Subscribe to DeepLinkListener**
+
+\`\`\`java
+AppsFlyerLib.getInstance().subscribeForDeepLink(new DeepLinkListener() {
+    @Override
+    public void onDeepLinking(@NonNull DeepLinkResult deepLinkResult) {
+        // TODO - handle the deep link result here
+    }
+});
+\`\`\`
+
+8. **Handle Deep Link Listener Logic**
+
+\`\`\`java
+AppsFlyerLib.getInstance().subscribeForDeepLink(new DeepLinkListener() {
+    @Override
+    public void onDeepLinking(@NonNull DeepLinkResult deepLinkResult) {
+
+        DeepLinkResult.Status dlStatus = deepLinkResult.getStatus();
+        if (dlStatus == DeepLinkResult.Status.NOT_FOUND) {
+            Log.d(LOG_TAG, "Deep link not found");
+            return;
+        } else if (dlStatus == DeepLinkResult.Status.ERROR) {
+            DeepLinkResult.Error dlError = deepLinkResult.getError();
+            Log.d(LOG_TAG, "Error getting Deep Link data: " + dlError.toString());
+            return;
+        } else {
+            Log.d(LOG_TAG, "Deep link found");
+        }
+
+        DeepLink deepLinkObj = deepLinkResult.getDeepLink();
+        try {
+            Log.d(LOG_TAG, "DeepLink data: " + deepLinkObj.toString());
+
+            String deepLinkDestination = deepLinkObj.getDeepLinkValue();
+
+            if (deepLinkObj.isDeferred()) {
+                Log.d(LOG_TAG, "Deferred deep link flow");
+                // Handle deferred deep link
+            } else {
+                Log.d(LOG_TAG, "Direct deep link flow");
+                // Handle direct deep link
+            }
+
+            // Navigate or handle destination here
+
+        } catch (Exception e) {
+            Log.d(LOG_TAG, "DeepLink data was null");
+        }
+    }
+});
+\`\`\`
+
+9. **Summary Notes**
+
+- Use \`singleTask\` or \`singleTop\` for launchMode.
+- Make sure scheme/host in manifest and OneLink match.
+- For App Links, verify assetlinks.json is hosted.
+- For URI schemes (e.g. \`myapp://\`), use a dedicated intent-filter.
+- Replace \`YOUR_APPSFLYER_DEV_KEY\` with your actual key.
+
+🎯 Ready to integrate and test deep linking!
+
+`,
+        },
+      ],
+    };
+  }
+);
+
+server.tool(
   "DetectAppsFlyerDeepLink",
   {},
   {
-    description: "Detect whether a deep link was triggered from AppsFlyer logs",
+    description: "Detect and analyze deep links triggered from AppsFlyer logs, including type, values, and errors",
     intent: "detect appsflyer deep link",
-    keywords: ["deeplink", "deep link", "appsFlyer", "detect", "ddl", "udl"],
+    keywords: ["deeplink", "deep link", "appsFlyer", "detect", "direct", "deferred", "errors", "af_dp"],
   },
   async () => {
     const logsText = getRecentLogs();
@@ -424,34 +617,66 @@ server.tool(
       };
     }
 
-    const logs = logsText.split("\n");
-    const info = extractAppsflyerDeeplinkInfo(logs);
-
-    if (!info.found) {
+    // Check if AppsFlyer SDK is connected
+    const sdkConnected = /AppsFlyerLib|AppsFlyer SDK/i.test(logsText);
+    if (!sdkConnected) {
       return {
         content: [
-          { type: "text", text: "❌ No deep link detected in the logs." },
+          {
+            type: "text",
+            text: "⚠️ AppsFlyer SDK not detected in logs.\nPlease run the 'integrateAppsFlyerSdk' tool to set up the SDK connection.",
+          },
         ],
       };
     }
+
+    const logs = logsText.split("\n");
+    const logText = logs.join("\n");
+
+    // Detect Deferred Deep Link
+    const isDeferred =
+      /is_deferred\s*[:=]\s*true/i.test(logText) ||
+      /deferred deep link/i.test(logText);
+
+    // Detect Direct Deep Link
+    const hasOnDeepLinkingSuccess = /onDeepLinking.*SUCCESS/i.test(logText);
+    const hasAfDp = /af_dp[=:"]/i.test(logText);
+    const hasAfDeeplinkTrue = /af_deeplink\s*[:=]\s*true/i.test(logText);
+    const isDirect = (hasOnDeepLinkingSuccess || hasAfDp || hasAfDeeplinkTrue) && !isDeferred;
+
+    // Find all deep link entries in logs
+    const deeplinkLines = logs.filter((line) =>
+      /deep_link_value|af_dp|onDeepLinking/i.test(line)
+    );
+
+    // Find deep link errors
+    const deeplinkErrors = logs.filter((line) =>
+      /onDeepLinking.*FAILURE|error parsing|invalid|deep_link.*null/i.test(line)
+    );
+
+    // Build output
+    const results = [
+      isDeferred ? "📥 Deferred deep link detected." : "",
+      isDirect ? "⚡ Direct deep link detected." : "",
+      deeplinkLines.length > 0
+        ? `🔗 Found ${deeplinkLines.length} deep link entries:\n${deeplinkLines.join("\n")}`
+        : "❌ No deep links found in logs.",
+      deeplinkErrors.length > 0
+        ? `❗ Found ${deeplinkErrors.length} possible error(s):\n${deeplinkErrors.join("\n")}`
+        : "✅ No deep link errors detected.",
+    ].filter(Boolean);
 
     return {
       content: [
         {
           type: "text",
-          text: [
-            "✅ Deep link detected!",
-            `• Source: ${info.source}`,
-            `• Deferred: ${info.isDeferred ? "Yes" : "No"}`,
-            `• Value: ${info.deepLinkValue || "None"}`,
-            `• Referrer ID: ${info.referrerId || "None"}`,
-            info.error ? `⚠️ Parse error: ${info.error}` : "",
-          ].filter(Boolean).join("\n"),
+          text: results.join("\n\n"),
         },
       ],
     };
   }
 );
+
 
 server.tool(
   "VerifyAppsFlyerDeepLinkHandled",
