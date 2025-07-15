@@ -586,72 +586,75 @@ server.registerTool(
   }
 )
 
-server.tool(
+server.registerTool(
   "appsFlyerJsonEvent",
   {
-    inputFile: z.string().optional().describe("JSON string of event definitions or file path"),
-    searchPattern: z.string().optional().describe("Search pattern for JSON files (e.g., '*.json', 'events.json')"),
-    projectPath: z.string().optional().describe("Project directory path to search in"),
-  },
-  {
+    title: "AppsFlyer JSON Event Generator",
     description: "Generate AppsFlyer Java code from JSON event definitions. Can search for JSON files in project or accept direct JSON input.",
-    intent: async ({ entities }: { entities: any }) => {
-      const inputFile = entities.inputFile?.value?.trim();
-      const searchPattern = entities.searchPattern?.value?.trim();
-      const projectPath = entities.projectPath?.value?.trim();
-      // If no input provided, show options
-      if (!inputFile && !searchPattern) {
-        return {
-          type: "text",
-          text: [
-            "📄 **AppsFlyer JSON Event Generator**",
-            "",
-            "You can use this tool in two ways:",
-            "",
-            "🔍 **Search for JSON files:**",
-            "• Specify a search pattern (e.g., 'events.json', '*.json')",
-            "• Optionally specify project path",
-            "",
-            "📝 **Direct JSON input:**",
-            "• Provide JSON string directly",
-            "",
-            "**Example JSON format:**",
-            "```json",
-            "{",
-            '  "events": [',
-            "    {",
-            '      "eventIdentifier": "af_purchase",',
-            '      "parameters": [',
-            "        {",
-            '          "parameterIdentifier": "af_revenue",',
-            '          "parameterValueExample": 29.99',
-            "        }",
-            "      ]",
-            "    }",
-            "  ]",
-            "}",
-            "```",
-            "",
-            "💡 **Usage examples:**",
-            "• 'Generate AppsFlyer code from events.json'",
-            "• 'Search for *.json files and generate AppsFlyer code'",
-            "• 'Generate AppsFlyer code from {\"events\": [...]}')"
-          ].join("\n")
-        };
-      }
-      return {
-        type: "tool-call",
-        tool: "appsFlyerJsonEvent",
-        parameters: {
-          inputFile,
-          searchPattern,
-          projectPath
-        }
-      };
+    inputSchema: {
+      inputFile: z.string().optional().describe("JSON string of event definitions or file path"),
+      searchPattern: z.string().optional().describe("Search pattern for JSON files (e.g., '*.json', 'events.json')"),
+      projectPath: z.string().optional().describe("Project directory path to search in"),
+    },
+    annotations: {
+      intent: "Generate AppsFlyer Java code from JSON event definitions or files.",
+      keywords: [
+        "json event appsflyer",
+        "generate appsflyer code",
+        "apps flyer json",
+        "event generator",
+        "apps flyer event json",
+        "generate java code from json",
+        "apps flyer event file"
+      ],
     },
   },
   async (args, _extra) => {
     const { inputFile, searchPattern, projectPath } = args;
+    // Show usage instructions if no input provided
+    if (!inputFile && !searchPattern) {
+      return {
+        content: [
+          {
+            type: "text",
+            text: [
+              "📄 **AppsFlyer JSON Event Generator**",
+              "",
+              "You can use this tool in two ways:",
+              "",
+              "🔍 **Search for JSON files:**",
+              "• Specify a search pattern (e.g., 'events.json', '*.json')",
+              "• Optionally specify project path",
+              "",
+              "📝 **Direct JSON input:**",
+              "• Provide JSON string directly",
+              "",
+              "**Example JSON format:**",
+              "```json",
+              "{",
+              '  "events": [',
+              "    {",
+              '      "eventIdentifier": "af_purchase",',
+              '      "parameters": [',
+              "        {",
+              '          "parameterIdentifier": "af_revenue",',
+              '          "parameterValueExample": 29.99',
+              "        }",
+              "      ]",
+              "    }",
+              "  ]",
+              "}",
+              "```",
+              "",
+              "💡 **Usage examples:**",
+              "• 'Generate AppsFlyer code from events.json'",
+              "• 'Search for *.json files and generate AppsFlyer code'",
+              "• 'Generate AppsFlyer code from {\"events\": [...]}')"
+            ].join("\n")
+          }
+        ]
+      };
+    }
     let jsonContent = "";
     // If search pattern provided, search for files
     if (searchPattern) {
@@ -659,7 +662,7 @@ server.tool(
         const searchPath = projectPath || process.cwd();
         const pattern = path.join(searchPath, searchPattern);
         // Use glob's async API
-        const files: string[] = await glob(pattern);
+        const files = await glob(pattern);
         if (!Array.isArray(files) || files.length === 0) {
           return {
             content: [{
@@ -670,7 +673,7 @@ server.tool(
         }
         // If multiple files found, show options
         if (files.length > 1) {
-          const fileList = files.map((file: string, index: number) => `${index + 1}. ${file}`).join('\n');
+          const fileList = files.map((file, index) => `${index + 1}. ${file}`).join('\n');
           return {
             content: [{
               type: "text",
@@ -682,19 +685,19 @@ server.tool(
         const filePath = files[0];
         try {
           jsonContent = await fs.promises.readFile(filePath, 'utf8');
-        } catch (error) {
+        } catch (error: any) {
           return {
             content: [{
               type: "text",
-              text: `❌ Error reading file ${filePath}: ${(error as Error).message}`
+              text: `❌ Error reading file ${filePath}: ${error.message}`
             }]
           };
         }
-      } catch (error) {
+      } catch (error: any) {
         return {
           content: [{
             type: "text",
-            text: `❌ Error searching for files: ${(error as Error).message}`
+            text: `❌ Error searching for files: ${error.message}`
           }]
         };
       }
@@ -705,11 +708,11 @@ server.tool(
         try {
           const filePath = path.resolve(inputFile);
           jsonContent = await fs.promises.readFile(filePath, 'utf8');
-        } catch (error) {
+        } catch (error: any) {
           return {
             content: [{
               type: "text",
-              text: `❌ Error reading file ${inputFile}: ${(error as Error).message}`
+              text: `❌ Error reading file ${inputFile}: ${error.message}`
             }]
           };
         }
@@ -729,11 +732,11 @@ server.tool(
     let parsed;
     try {
       parsed = JSON.parse(jsonContent);
-    } catch (error) {
+    } catch (error: any) {
       return {
         content: [{
           type: "text",
-          text: `❌ Invalid JSON format: ${(error as Error).message}`
+          text: `❌ Invalid JSON format: ${error.message}`
         }]
       };
     }
