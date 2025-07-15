@@ -134,8 +134,17 @@ AppsFlyerLib.getInstance().logEvent(getApplicationContext(), <<Event name>>, eve
   ],
   AppsFlyerOneLinkDeepLinkSetupPrompt: [
       `✅ Guide to integrate Deep Linking with AppsFlyer OneLink (example URL: https://onelink-basic-app.onelink.me/H5hv/apples)`,
+      
+    `**1. Initialize AppsFlyer SDK**
     
-      `**1. Update AndroidManifest.xml**
+    Initialize the SDK early in your app (e.g., in Application.onCreate or MainActivity.onCreate):`,
+    
+      `\`\`\`java
+    AppsFlyerLib.getInstance().setOneLinkCustomDomain("he.wikipedia.org"); // Replace with your domain
+    AppsFlyerLib.getInstance().start(getApplicationContext(), "YOUR_APPSFLYER_DEV_KEY");
+    \`\`\``,
+    
+      `**2. Update AndroidManifest.xml**
     
     Add this intent-filter to your MainActivity:`,
     
@@ -154,15 +163,6 @@ AppsFlyerLib.getInstance().logEvent(getApplicationContext(), <<Event name>>, eve
           android:pathPrefix="/H5hv/apples" />
       </intent-filter>
     </activity>
-    \`\`\``,
-    
-      `**2. Initialize AppsFlyer SDK**
-    
-    Initialize the SDK early in your app (e.g., in Application.onCreate or MainActivity.onCreate):`,
-    
-      `\`\`\`java
-    AppsFlyerLib.getInstance().setOneLinkCustomDomain("he.wikipedia.org"); // Replace with your domain
-    AppsFlyerLib.getInstance().start(getApplicationContext(), "YOUR_APPSFLYER_DEV_KEY");
     \`\`\``,
     
       `**3. Handle Deep Link Intent in MainActivity**
