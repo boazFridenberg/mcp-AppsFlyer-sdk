@@ -70,7 +70,7 @@ Run the **verifyAppsFlyerSdk** tool to confirm the integration was successful an
     `🚨 Copy exactly as written below. Do NOT change anything. Every word matters!\n`,
   
     `**1. Check if the AppsFlyer SDK is installed**  
-  If you haven't already added the SDK, run this tool first:  
+  If the SDK is not integrated, ask the user to run the tool:  
   👉 \`integrateAppsFlyerSdk\``,
   
     `**2. Import predefined event names**  
