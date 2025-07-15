@@ -1,4 +1,4 @@
-import { logBuffer } from "./stream.js";
+import { logBuffer, startLogcatStream } from "./stream.js";
 
 export interface ParsedLog {
   timestamp: string;

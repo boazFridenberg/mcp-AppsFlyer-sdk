@@ -1,8 +1,8 @@
 #!/usr/bin/env node
-
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { McpServer} from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { startLogcatStream, getRecentLogs, logBuffer, stopLogcatStream, extractParam, getLogs } from "./logcat/stream.js";
+import { startLogcatStream, logBuffer } from "./logcat/stream.js";
+import { extractJsonFromLine } from "./logcat/parse.js";
 import { getParsedAppsflyerFilters } from "./logcat/parse.js";
 import { z } from "zod";
 import { descriptions } from "./constants/descriptions.js";
@@ -16,33 +16,15 @@ const server = new McpServer({
   version: "1.0.0",
 });
 
-server.tool(
+server.registerTool(
   "integrateAppsFlyerSdk",
-  {},
   {
+    title: "Integrate AppsFlyer SDK",
     description: descriptions.integrateAppsFlyerSdk,
-    intent: intents.integrateAppsFlyerSdk,
-    keywords: keywords.integrateAppsFlyerSdk,
-  },
-  async () => {
-    return {
-      content: [
-        {
-          type: "text",
-          text: steps.integrateAppsFlyerSdk.join("\n\n"),
-        },
-      ],
-    };
-  }
-);
-
-server.tool(
-  "verifyAppsFlyerSdk",
-  {}, 
-  {
-    description: descriptions.verifyAppsFlyerSdk,
-    intent: intents.verifyAppsFlyerSdk,
-    keywords: keywords.verifyAppsFlyerSdk,
+    annotations: {
+      intent: intents.integrateAppsFlyerSdk,
+      keywords: keywords.integrateAppsFlyerSdk,
+    },
   },
   async () => {
     const devKey = process.env.DEV_KEY;
@@ -57,9 +39,90 @@ server.tool(
       };
     }
 
-    let logsText = "";
+    let latestVersion = null;
     try {
-      logsText = await getLogs(500);
+      const res = await fetch(
+        `https://search.maven.org/solrsearch/select?q=g:com.appsflyer+AND+a:af-android-sdk&core=gav&rows=1&wt=json`
+      );
+      const json = (await res.json()) as any;
+      latestVersion = json.response?.docs?.[0]?.v;
+    } catch (err: any) {
+      return {
+        content: [
+          {
+            type: "text",
+            text: `❌ Failed to fetch latest SDK version: ${err.message}`,
+          },
+        ],
+      };
+    }
+
+    if (!latestVersion) {
+      return {
+        content: [
+          {
+            type: "text",
+            text: `❌ Could not extract latest SDK version from response.`,
+          },
+        ],
+      };
+    }
+
+    const stepsWithReplacements = steps.integrateAppsFlyerSdk.map((step) => {
+      let updated = step.replace("<YOUR-DEV-KEY>", devKey);
+      if (updated.includes(`implementation 'com.appsflyer:af-android-sdk'`)) {
+        updated = updated.replace(
+          `implementation 'com.appsflyer:af-android-sdk'`,
+          `implementation 'com.appsflyer:af-android-sdk:${latestVersion}'`
+        );
+      }
+      return updated;
+    });
+
+    return {
+      content: [
+        {
+          type: "text",
+          text: stepsWithReplacements.join("\n\n"),
+        },
+      ],
+    };
+  }
+);
+
+server.registerTool(
+  "verifyAppsFlyerSdk",
+  {
+    title: "Verify AppsFlyer SDK",
+    description: descriptions.verifyAppsFlyerSdk,
+    inputSchema: {
+      deviceId: z.string().optional(),
+    },
+    annotations: {
+      intent: intents.verifyAppsFlyerSdk,
+      keywords: keywords.verifyAppsFlyerSdk,
+    },
+  },
+  async ({ deviceId }) => {
+    const devKey = process.env.DEV_KEY;
+    if (!devKey) {
+      return {
+        content: [
+          {
+            type: "text",
+            text: `❌ DevKey environment variable (DEV_KEY) not set.`,
+          },
+        ],
+      };
+    }
+
+    try {
+      await startLogcatStream("AppsFlyer_", deviceId);
+      let waited = 0;
+      while (logBuffer.length === 0 && waited < 2000) {
+        await new Promise((res) => setTimeout(res, 200));
+        waited += 200;
+      }
     } catch (err: any) {
       return {
         content: [
@@ -68,35 +131,86 @@ server.tool(
       };
     }
 
-    const appId =
-      extractParam(logsText, "app_id") || extractParam(logsText, "appId");
-    const uid =
-      extractParam(logsText, "uid") || extractParam(logsText, "device_id");
+    const conversionLogs = getParsedAppsflyerFilters("CONVERSION-");
+    const launchLogs = getParsedAppsflyerFilters("LAUNCH-");
 
-    if (!appId || !uid) {
+    const relevantLog = conversionLogs[conversionLogs.length - 1] || launchLogs[launchLogs.length - 1];
+
+    if (!relevantLog) {
       return {
         content: [
           {
             type: "text",
-            text: `❌ Failed to extract app_id or uid from logs.\napp_id: ${appId}\nuid: ${uid}`,
+            text: `❌ Failed to find any CONVERSION- or LAUNCH- log with uid.`,
+          },
+        ],
+      };
+    }
+
+    const uid = relevantLog.json["uid"] || relevantLog.json["device_id"];
+    const timestamp = relevantLog.timestamp;
+
+    if (!uid) {
+      return {
+        content: [
+          {
+            type: "text",
+            text: `❌ Log found but missing uid or device_id.`,
+          },
+        ],
+      };
+    }
+
+    let appId: string | undefined;
+    for (const line of logBuffer.slice().reverse()) {
+      const json = extractJsonFromLine(line);
+      if (json?.app_id || json?.appId) {
+        appId = json.app_id || json.appId;
+        break;
+      }
+
+      const match = line.match(/app_id=([a-zA-Z0-9._]+)/);
+      if (match) {
+        appId = match[1];
+        break;
+      }
+    }
+
+    if (!appId) {
+      return {
+        content: [
+          {
+            type: "text",
+            text: `❌ Could not find app_id in logs.`,
           },
         ],
       };
     }
 
     const url = `https://gcdsdk.appsflyer.com/install_data/v4.0/${appId}?devkey=${devKey}&device_id=${uid}`;
-
     try {
       const res = await fetch(url, {
         method: "GET",
         headers: { accept: "application/json" },
       });
-      const json = await res.json();
+      const json = (await res.json()) as any;
+
+      const afStatus = json.af_status || "Unknown";
+      const installTime = json.install_time || "N/A";
+
       return {
         content: [
           {
             type: "text",
-            text: `✅ SDK Test Succeeded:\n\n${JSON.stringify(json, null, 2)}`,
+            text:
+              `✅ The AppsFlyer SDK verification succeeded.\n` +
+              `SDK is active and responding.\n\n` +
+              `🔹 App ID: ${appId}\n` +
+              `🔹 UID: ${uid}\n` +
+              `🔹 Timestamp: ${timestamp}\n` +
+              `🔹 Status: ${afStatus} install (af_status: "${afStatus}")\n` +
+              `🔹 Install time: ${installTime}\n\n` +
+              `If you need more details or want to check specific events or logs, let me know!`,
           },
         ],
       };
@@ -113,15 +227,18 @@ server.tool(
   }
 );
 
-server.tool(
+server.registerTool(
   "fetchAppsflyerLogs",
   {
-    deviceId: z.string().optional(),
-  },
-  {
+    title: "Fetch AppsFlyer Logs",
     description: descriptions.fetchAppsflyerLogs,
-    intent: intents.fetchAppsflyerLogs,
-    keywords: keywords.fetchAppsflyerLogs,
+    inputSchema: {
+      deviceId: z.string().optional(),
+    },
+    annotations: {
+      intent: intents.fetchAppsflyerLogs,
+      keywords: keywords.fetchAppsflyerLogs,
+    },
   },
   async ({ deviceId }) => {
     try {
@@ -131,8 +248,7 @@ server.tool(
         await new Promise((res) => setTimeout(res, 200));
         waited += 200;
       }
-      const logs = getRecentLogs();
-      stopLogcatStream();
+      const logs = logBuffer.join("\n");
       return {
         content: [
           {
@@ -142,7 +258,6 @@ server.tool(
         ],
       };
     } catch (err: any) {
-      stopLogcatStream();
       return {
         content: [
           {
@@ -159,24 +274,30 @@ function createLogTool(
   toolName: keyof typeof descriptions,
   keyword: string
 ): void {
-  server.tool(
+  server.registerTool(
     toolName,
-    { lineCount: z.number().optional().default(50) },
     {
+      title: toolName.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase()).trim(),
       description: descriptions[toolName],
-      intent: intents[toolName],
-      keywords: keywords[toolName],
+      inputSchema: {
+        deviceId: z.string().optional(),
+      },
+      annotations: {
+        intent: intents[toolName],
+        keywords: keywords[toolName],
+      },
     },
-    async () => {
+    async ({ deviceId }) => {
+      await startLogcatStream("AppsFlyer_", deviceId);
       const logs = getParsedAppsflyerFilters(keyword);
 
-      if (keyword === "CONVERSION-") {
+      if (keyword === "CONVERSION-" || keyword === "LAUNCH-" || keyword === "deepLink") {
         if (!logs.length) {
           return {
             content: [
               {
                 type: "text",
-                text: "No conversion log entry found.",
+                text: "No logs entry found.",
               },
             ],
           };
@@ -198,7 +319,6 @@ function createLogTool(
             .filter((key) => key in latestLog.json)
             .map((key) => [key, latestLog.json[key]])
         );
-
         return {
           content: [
             {
@@ -209,7 +329,6 @@ function createLogTool(
         };
       }
 
-      // default behavior for other keywords
       return {
         content: [
           {
@@ -229,13 +348,15 @@ createLogTool("getInAppLogs", "INAPP-");
 createLogTool("getLaunchLogs", "LAUNCH-");
 createLogTool("getDeepLinkLogs", "deepLink");
 
-server.tool(
+server.registerTool(
   "getAppsflyerErrors",
-  {},
   {
+    title: "Get AppsFlyer Errors",
     description: descriptions.getAppsflyerErrors,
-    intent: intents.getAppsflyerErrors,
-    keywords: keywords.getAppsflyerErrors,
+    annotations: {
+      intent: intents.getAppsflyerErrors,
+      keywords: keywords.getAppsflyerErrors,
+    },
   },
   async ({ }) => {
     const errorKeywords = keywords.getAppsflyerErrors;
@@ -248,13 +369,21 @@ server.tool(
   }
 );
 
-server.tool(
+server.registerTool(
   "createAppsFlyerLogEvent",
   {
-    eventName: z.string().optional(),
-    eventParams: z.record(z.any()).optional(),
-    wantsExamples: z.enum(["yes", "no"]).optional(),
-    hasListener: z.enum(["yes", "no"]).optional(),
+    title: "Create AppsFlyer Log Event",
+    description: descriptions.createAppsFlyerLogEvent,
+    inputSchema: {
+      eventName: z.string().optional(),
+      eventParams: z.record(z.any()).optional(),
+      wantsExamples: z.enum(["yes", "no"]).optional(),
+      hasListener: z.enum(["yes", "no"]).optional(),
+    },
+    annotations: {
+      intent: intents.createAppsFlyerLogEvent,
+      keywords: keywords.createAppsFlyerLogEvent,
+    },
   },
   async (args) => {
     const eventName = args.eventName?.trim();
@@ -372,39 +501,68 @@ server.tool(
   }
 );
 
-server.tool(
+server.registerTool(
   "verifyInAppEvent",
-  {},
   {
+    title: "Verify In-App Event",
     description: descriptions.verifyInAppEvent,
-    intent: intents.verifyInAppEvent,
-    keywords: keywords.verifyInAppEvent,
+    annotations: {
+      intent: intents.verifyInAppEvent,
+      keywords: keywords.verifyInAppEvent,
+    },
+    inputSchema: {
+      eventName: z.string({
+        required_error:
+          "Please provide the name of the in-app event you want to verify",
+      }),
+    },
   },
-  async ({ }) => {
-    const logs = logBuffer;
+  async function verifyInAppEventHandler({ eventName }) {
+    const logLines = logBuffer;
+    let foundEvent = false;
+    let foundEventValue = false;
+    let foundEndpoint = false;
 
-    const hasEventName = logs.includes('"event": "af_level_achieved"');
-    const hasEventValue = logs.includes('"eventvalue":"{"af_content":');
-    const hasEndpoint = logs.includes(
-      "androidevent?app_id=com.appsflyer.onelink.appsflyeronelinkbasicapp"
-    );
+    for (const line of logLines) {
+      try {
+        const json = JSON.parse(line);
+        if (json.event === eventName) {
+          foundEvent = true;
+          if (
+            json.eventvalue &&
+            typeof json.eventvalue === "object" &&
+            Object.keys(json.eventvalue).length > 0
+          ) {
+            foundEventValue = true;
+          }
+          if (line.includes("androidevent?app_id=")) {
+            foundEndpoint = true;
+          }
+        }
+      } catch {
+        continue;
+      }
+    }
 
-    const allPresent = hasEventName && hasEventValue && hasEndpoint;
-
+    const allPresent = foundEvent && foundEventValue && foundEndpoint;
     return {
       content: [
         {
           type: "text",
           text: allPresent
-            ? "✅ Event `af_level_achieved` was successfully logged. All required log entries were found."
-            : `❌ The event may not have been logged correctly. Results:
-- Has Event Name: ${hasEventName}
-- Has Event Value: ${hasEventValue}
-- Has Endpoint: ${hasEndpoint}`,
+            ? `✅ Event \`${eventName}\` was successfully logged with full details.`
+            : `❌ The event \`${eventName}\` may not have been logged correctly. Results:\n- Found Event: ${foundEvent}\n- Found Event Value: ${foundEventValue}\n- Found Endpoint: ${foundEndpoint}`,
         },
-        { type: "text", text: `✅ Event created successfully!` },
+        ...(allPresent
+          ? [
+              {
+                type: "text",
+                text: `✅ Event \`${eventName}\` created successfully!`,
+              },
+            ]
+          : []),
       ],
-    };
+    } as { [x: string]: unknown; content: { type: "text"; text: string; _meta?: { [x: string]: unknown } }[] };
   }
 );
 
@@ -489,8 +647,15 @@ server.tool(
   }
 );
 
-
-const transport = new StdioServerTransport();
-await server.connect(transport);
-console.log("MCP server running with stdio transport...");
-
+async function startServer() {
+  try {
+    const transport = new StdioServerTransport();
+    await server.connect(transport);
+    console.error("MCP server running with stdio transport...");
+  } catch (error) {
+    console.error("Failed to start MCP server:", error);
+    process.exit(1);
+  }
+}
+// Start the server
+startServer();
