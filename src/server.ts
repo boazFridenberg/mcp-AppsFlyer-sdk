@@ -1,8 +1,7 @@
 #!/usr/bin/env node
-
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { McpServer} from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { startLogcatStream, logBuffer, stopLogcatStream, extractParam } from "./logcat/stream.js";
+import { startLogcatStream, logBuffer } from "./logcat/stream.js";
 import { extractJsonFromLine } from "./logcat/parse.js";
 import { getParsedAppsflyerFilters } from "./logcat/parse.js";
 import { z } from "zod";
@@ -20,13 +19,15 @@ const server = new McpServer({
   version: "1.0.0",
 });
 
-server.tool(
+server.registerTool(
   "integrateAppsFlyerSdk",
-  {},
   {
+    title: "Integrate AppsFlyer SDK",
     description: descriptions.integrateAppsFlyerSdk,
-    intent: intents.integrateAppsFlyerSdk,
-    keywords: keywords.integrateAppsFlyerSdk,
+    annotations: {
+      intent: intents.integrateAppsFlyerSdk,
+      keywords: keywords.integrateAppsFlyerSdk,
+    },
   },
   async () => {
     const devKey = process.env.DEV_KEY;
@@ -93,15 +94,20 @@ server.tool(
   }
 );
 
-server.tool(
+server.registerTool(
   "verifyAppsFlyerSdk",
-  {},
   {
+    title: "Verify AppsFlyer SDK",
     description: descriptions.verifyAppsFlyerSdk,
-    intent: intents.verifyAppsFlyerSdk,
-    keywords: keywords.verifyAppsFlyerSdk,
+    inputSchema: {
+      deviceId: z.string().optional(),
+    },
+    annotations: {
+      intent: intents.verifyAppsFlyerSdk,
+      keywords: keywords.verifyAppsFlyerSdk,
+    },
   },
-  async () => {
+  async ({ deviceId }) => {
     const devKey = process.env.DEV_KEY;
     if (!devKey) {
       return {
@@ -115,7 +121,7 @@ server.tool(
     }
 
     try {
-      await startLogcatStream("AppsFlyer_");
+      await startLogcatStream("AppsFlyer_", deviceId);
       let waited = 0;
       while (logBuffer.length === 0 && waited < 2000) {
         await new Promise((res) => setTimeout(res, 200));
@@ -130,28 +136,31 @@ server.tool(
       };
     }
 
+    const conversionLogs = getParsedAppsflyerFilters("CONVERSION-");
     const launchLogs = getParsedAppsflyerFilters("LAUNCH-");
-    if (!launchLogs.length) {
+
+    const relevantLog = conversionLogs[conversionLogs.length - 1] || launchLogs[launchLogs.length - 1];
+
+    if (!relevantLog) {
       return {
         content: [
           {
             type: "text",
-            text: `❌ Failed to find any LAUNCH- log with uid.`,
+            text: `❌ Failed to find any CONVERSION- or LAUNCH- log with uid.`,
           },
         ],
       };
     }
 
-    const latestLaunch = launchLogs[launchLogs.length - 1];
-    const uid = latestLaunch.json["uid"] || latestLaunch.json["device_id"];
-    const timestamp = latestLaunch.timestamp;
+    const uid = relevantLog.json["uid"] || relevantLog.json["device_id"];
+    const timestamp = relevantLog.timestamp;
 
     if (!uid) {
       return {
         content: [
           {
             type: "text",
-            text: `❌ LAUNCH log found but no uid/device_id in JSON.`,
+            text: `❌ Log found but missing uid or device_id.`,
           },
         ],
       };
@@ -189,7 +198,7 @@ server.tool(
         method: "GET",
         headers: { accept: "application/json" },
       });
-      const json = await res.json() as any;
+      const json = (await res.json()) as any;
 
       const afStatus = json.af_status || "Unknown";
       const installTime = json.install_time || "N/A";
@@ -223,15 +232,18 @@ server.tool(
   }
 );
 
-server.tool(
+server.registerTool(
   "fetchAppsflyerLogs",
   {
-    deviceId: z.string().optional(),
-  },
-  {
+    title: "Fetch AppsFlyer Logs",
     description: descriptions.fetchAppsflyerLogs,
-    intent: intents.fetchAppsflyerLogs,
-    keywords: keywords.fetchAppsflyerLogs,
+    inputSchema: {
+      deviceId: z.string().optional(),
+    },
+    annotations: {
+      intent: intents.fetchAppsflyerLogs,
+      keywords: keywords.fetchAppsflyerLogs,
+    },
   },
   async ({ deviceId }) => {
     try {
@@ -267,27 +279,30 @@ function createLogTool(
   toolName: keyof typeof descriptions,
   keyword: string
 ): void {
-  server.tool(
+  server.registerTool(
     toolName,
     {
-      deviceId: z.string().optional(),
-    },
-    {
+      title: toolName.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase()).trim(),
       description: descriptions[toolName],
-      intent: intents[toolName],
-      keywords: keywords[toolName],
+      inputSchema: {
+        deviceId: z.string().optional(),
+      },
+      annotations: {
+        intent: intents[toolName],
+        keywords: keywords[toolName],
+      },
     },
     async ({ deviceId }) => {
       await startLogcatStream("AppsFlyer_", deviceId);
       const logs = getParsedAppsflyerFilters(keyword);
 
-      if (keyword === "CONVERSION-") {
+      if (keyword === "CONVERSION-" || keyword === "LAUNCH-" || keyword === "deepLink") {
         if (!logs.length) {
           return {
             content: [
               {
                 type: "text",
-                text: "No conversion log entry found.",
+                text: "No logs entry found.",
               },
             ],
           };
@@ -319,7 +334,6 @@ function createLogTool(
         };
       }
 
-      // default behavior for other keywords
       return {
         content: [
           {
@@ -339,13 +353,15 @@ createLogTool("getInAppLogs", "INAPP-");
 createLogTool("getLaunchLogs", "LAUNCH-");
 createLogTool("getDeepLinkLogs", "deepLink");
 
-server.tool(
+server.registerTool(
   "getAppsflyerErrors",
-  {},
   {
+    title: "Get AppsFlyer Errors",
     description: descriptions.getAppsflyerErrors,
-    intent: intents.getAppsflyerErrors,
-    keywords: keywords.getAppsflyerErrors,
+    annotations: {
+      intent: intents.getAppsflyerErrors,
+      keywords: keywords.getAppsflyerErrors,
+    },
   },
   async ({ }) => {
     const errorKeywords = keywords.getAppsflyerErrors;
@@ -358,13 +374,22 @@ server.tool(
   }
 );
 
-
-server.tool(
+server.registerTool(
   "createAppsFlyerLogEvent",
   {
-    eventName: z.string().optional(),
-    eventParams: z.record(z.any()).optional(),
-    hasListener: z.enum(["yes", "no"]).optional(),
+    title: "Create AppsFlyer Log Event",
+    description: descriptions.createAppsFlyerLogEvent,
+    inputSchema: {
+      eventName: z.string().optional(),
+      eventParams: z.record(z.any()).optional(),
+      wantsExamples: z.enum(["yes", "no"]).optional(),
+      hasListener: z.enum(["yes", "no"]).optional(),
+    },
+    annotations: {
+      intent: intents.createAppsFlyerLogEvent,
+      keywords: keywords.createAppsFlyerLogEvent,
+    },
+
   },
   async (args, extra) => {
     const rootDir = await new Promise((resolve) => {
@@ -526,14 +551,15 @@ server.tool(
   }
 );
 
-
-server.tool(
+server.registerTool(
   "verifyInAppEvent",
-  {},
   {
+    title: "Verify In-App Event",
     description: descriptions.verifyInAppEvent,
-    intent: intents.verifyInAppEvent,
-    keywords: keywords.verifyInAppEvent,
+    annotations: {
+      intent: intents.verifyInAppEvent,
+      keywords: keywords.verifyInAppEvent,
+    },
   },
   async ({ }) => {
     const logs = logBuffer;
@@ -552,17 +578,13 @@ server.tool(
           type: "text",
           text: allPresent
             ? "✅ Event `af_level_achieved` was successfully logged. All required log entries were found."
-            : `❌ The event may not have been logged correctly. Results:
-- Has Event Name: ${hasEventName}
-- Has Event Value: ${hasEventValue}
-- Has Endpoint: ${hasEndpoint}`,
+            : `❌ The event may not have been logged correctly. Results:\n- Has Event Name: ${hasEventName}\n- Has Event Value: ${hasEventValue}\n- Has Endpoint: ${hasEndpoint}`,
         },
         { type: "text", text: `✅ Event created successfully!` },
       ],
     };
   }
 )
-
 
 server.tool(
   "appsFlyerJsonEvent",
@@ -781,7 +803,16 @@ server.tool(
   }
 );
 
+async function startServer() {
+  try {
+    const transport = new StdioServerTransport();
+    await server.connect(transport);
+    console.error("MCP server running with stdio transport...");
+  } catch (error) {
+    console.error("Failed to start MCP server:", error);
+    process.exit(1);
+  }
+}
 
-const transport = new StdioServerTransport();
-await server.connect(transport);
-console.error("MCP server running with stdio transport...");
+// Start the server
+startServer();
