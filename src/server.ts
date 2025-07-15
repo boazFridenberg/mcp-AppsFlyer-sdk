@@ -88,6 +88,7 @@ server.registerTool(
     };
   }
 );
+
 server.registerTool(
   "verifyAppsFlyerSdk",
   {
