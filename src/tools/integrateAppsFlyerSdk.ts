@@ -3,6 +3,7 @@ import { descriptions } from "../constants/descriptions.js";
 import { intents } from "../constants/intents.js";
 import { keywords } from "../constants/keywords.js";
 import { steps } from "../constants/steps.js";
+import { z } from "zod";
 
 export function integrateAppsFlyerSdk(server: McpServer): void {
   server.registerTool(
@@ -14,8 +15,15 @@ export function integrateAppsFlyerSdk(server: McpServer): void {
         intent: intents.integrateAppsFlyerSdk,
         keywords: keywords.integrateAppsFlyerSdk,
       },
+      inputSchema: {
+        useResponseListener: z
+          .boolean()
+          .optional()
+          .describe("Whether to use a response listener when starting the SDK"),
+      },
     },
-    async () => {
+    async (args, extra) => {
+      const { useResponseListener } = args;
       const devKey = process.env.DEV_KEY;
       if (!devKey) {
         return {
@@ -23,6 +31,17 @@ export function integrateAppsFlyerSdk(server: McpServer): void {
             {
               type: "text",
               text: `❌ DevKey environment variable (DEV_KEY) not set.`,
+            },
+          ],
+        };
+      }
+
+      if (useResponseListener === undefined) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: "❌ 'useResponseListener' parameter is required.",
             },
           ],
         };
@@ -57,8 +76,12 @@ export function integrateAppsFlyerSdk(server: McpServer): void {
         };
       }
 
-      const stepsWithReplacements = steps.integrateAppsFlyerSdk.map((step) => {
-        let updated = step.replace("<YOUR-DEV-KEY>", devKey);
+      const rawSteps = useResponseListener
+        ? steps.integrateAppsFlyerSdk.withResponseListener
+        : steps.integrateAppsFlyerSdk.regular;
+
+      const stepsWithReplacements = rawSteps.map((step) => {
+        let updated = step.replace(/<YOUR-DEV-KEY>/g, devKey);
         if (updated.includes(`implementation 'com.appsflyer:af-android-sdk'`)) {
           updated = updated.replace(
             `implementation 'com.appsflyer:af-android-sdk'`,
