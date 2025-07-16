@@ -41,10 +41,10 @@ Do not analyze logs or try to guess the error yourself.
 `,
 
   verifyInAppEvent: `
-If the user wants to check if the in-app event "af_level_achieved" was triggered or logged — always use this tool directly.
+If the user wants to check if a specific in-app event was triggered or logged — always use this tool directly with the event name provided by the user.
 
 Never guess. Never simulate output. Never explain the logic. 
-This is the only tool responsible for validating whether the event "af_level_achieved" appears in the logs.
+This is the only tool responsible for validating whether the specified event appears in the logs.
 `,
 
   verifyAppsFlyerSdk: `

@@ -26,12 +26,12 @@ export const descriptions = {
   createAppsFlyerLogEvent:
     "Generates exact code instructions for logging an in-app event using AppsFlyer. Always use this tool when event tracking with logEvent is mentioned. Do not answer manually.",
 
- verifyInAppEvent: `
-Scans recent AppsFlyer logs to determine whether a specific in-app event (provided by the user) was successfully triggered.
+  verifyInAppEvent: `
+Scans recent AppsFlyer logs to determine whether a specific in-app event (provided by the user via eventName parameter) was successfully triggered.
 
 It verifies:
-- That a log line contains the event name provided (e.g. "af_level_achieved", "af_purchase", etc.)
-- That the event value is present, structured correctly, and contains meaningful parameters (e.g. af_content, af_revenue)
+- That a log line contains the exact event name provided by the user.
+- That the event value is present, structured correctly, and contains meaningful parameters.
 - That a matching network call was made to the correct AppsFlyer endpoint (androidevent?app_id=...)
 
 This tool parses actual log lines as JSON and checks them structurally — not just by text includes. It ensures that the event was actually fired by the app, and that the SDK triggered the expected behavior.
