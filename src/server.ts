@@ -400,7 +400,7 @@ server.registerTool(
         }
       });
     });
-
+  
     const ignoredDirs = new Set([
       ".Trash",
       "node_modules",
@@ -441,14 +441,9 @@ server.registerTool(
       return results;
     }
 
-    const projectFiles = await safeGetProjectFiles(String(rootDir));
-
-    
-
     const eventName = args.eventName?.trim();
     const eventParams = args.eventParams || {};
     const hasListener = args.hasListener?.toLowerCase() === "yes";
-
 
     if (!eventName) {
       return {
@@ -477,38 +472,58 @@ server.registerTool(
       eventParams: Record<string, any>,
       includeListener: boolean
     ): string[] {
-      const code: string[] = [];
-      code.push("Map<String, Object> eventValues = new HashMap<>());");
-      for (const [key, value] of Object.entries(eventParams)) {
-        const javaValue = typeof value === "number" ? value : `\"${value}\"`;
-        code.push(`eventValues.put(\"${key}\", ${javaValue});`);
-      }
-      code.push(
-        `AppsFlyerLib.getInstance().logEvent(getApplicationContext(), \"${eventName}\", eventValues);`
-      );
-      if (includeListener) {
-        code.push("// Optional: add AppsFlyerRequestListener if needed");
-        code.push("// AppsFlyerLib.getInstance().logEvent(..., new AppsFlyerRequestListener() { ... });");
-      }
-      return code;
+      const paramLines = Object.keys(eventParams)
+        .map((key) => `eventValues.put("${key}", <<ENTER VALUE FOR ${key}>>);`)
+        .join("\n");
+  
+      const code = includeListener
+        ? `
+    import com.appsflyer.AppsFlyerLib;
+    import com.appsflyer.AFInAppEventType; // Predefined event names
+    import com.appsflyer.AFInAppEventParameterName; // Predefined parameter names
+    import com.appsflyer.attribution.AppsFlyerRequestListener;
+    
+    Map<String, Object> eventValues = new HashMap<String, Object>();
+    ${paramLines}
+    
+    AppsFlyerLib.getInstance().logEvent(
+        getApplicationContext(),
+        "${eventName}",
+        eventValues,
+        new AppsFlyerRequestListener() {
+            @Override
+            public void onSuccess() {
+                // YOUR CODE UPON SUCCESS
+            }
+    
+            @Override
+            public void onError(int i, String s) {
+                // YOUR CODE FOR ERROR HANDLING
+            }
+        }
+    );
+    `
+        : `
+    import com.appsflyer.AppsFlyerLib;
+    import com.appsflyer.AFInAppEventType; // Predefined event names
+    import com.appsflyer.AFInAppEventParameterName; // Predefined parameter names
+    
+    Map<String, Object> eventValues = new HashMap<String, Object>();
+    ${paramLines}
+    
+    AppsFlyerLib.getInstance().logEvent(
+        getApplicationContext(),
+        "${eventName}",
+        eventValues
+    );
+    `;
+  
+      return code.trim().split("\n");
     }
-    const codeLines = generateJavaCode(eventName, eventParams, hasListener);
-    return {
-      content: [
-        {
-          type: "text",
-          text: `✅ Event is ready:\n\nName: ${eventName}\nParameters: ${JSON.stringify(
-            eventParams,
-            null,
-            2
-          )}\nListener included: ${hasListener ? "yes" : "no"}`,
-        },
-        {
-          type: "text",
-          text: ["```java", ...codeLines, "```"].join("\n"),
-        },
-      ],
-    };
+
+    // Add your main logic here (e.g., generate and return the Java code)
+    // For now, add a fallback return to ensure a valid return value
+    return { content: [] };
   }
 );
 

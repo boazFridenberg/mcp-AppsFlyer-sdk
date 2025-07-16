@@ -83,12 +83,20 @@ Run the **verifyAppsFlyerSdk** tool to confirm the integration was successful an
       ? [
           `**4. Import the response listener**  
   \`\`\`java
-  import com.appsflyer.attribution.AppsFlyerRequestListener;
+  import com.appsflyer.AppsFlyerLib;
+import com.appsflyer.AFInAppEventType; // Predefined event names
+import com.appsflyer.AFInAppEventParameterName; // Predefined parameter names
+import com.appsflyer.attribution.AppsFlyerRequestListener;
   \`\`\``,
   
           `**5. Create a Map and add parameters**  
   \`\`\`java
   Map<String, Object> eventParams = new HashMap<>();
+
+  Map<String, Object> eventValues = new HashMap<String, Object>();
+eventValues.put("permater", <<PLACE_HOLDRER_FOR_PARAM_VALUE>>);
+AppsFlyerLib.getInstance().logEvent(getApplicationContext(),
+      "event name", eventValues,
   \`\`\``,
   
           `**6. Add an event parameter**  
