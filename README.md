@@ -1,21 +1,35 @@
-# MCP AppsFlyer SDK MCP Server
+# MCP AppsFlyer SDK Server
 
 A robust Model Context Protocol (MCP) server for integrating, testing, and validating the [AppsFlyer Android SDK](https://dev.appsflyer.com/hc/docs/android-sdk) in Android applications. This tool provides real-time log streaming, event detection, and automated validation to ensure your AppsFlyer integration is correct and reliable.
 
 ---
 
 ## Table of Contents
-- [Features](#features)
-- [Prerequisites](#prerequisites)
-- [Installation](#installation)
-- [Configuration](#configuration)
-- [Usage](#usage)
-  - [Running the Server](#running-the-server)
-  - [Available Tools & Commands](#available-tools--commands)
-- [Log Analysis & Event Validation](#log-analysis--event-validation)
-- [Troubleshooting](#troubleshooting)
-- [Contributing](#contributing)
-- [Support & Reference](#support--reference)
+- [MCP AppsFlyer SDK Server](#mcp-appsflyer-sdk-server)
+  - [Table of Contents](#table-of-contents)
+  - [Features](#features)
+  - [Prerequisites](#prerequisites)
+  - [Installation](#installation)
+  - [Configuration](#configuration)
+    - [1. MCP Integration](#1-mcp-integration)
+    - [2. Environment Variables](#2-environment-variables)
+  - [Usage](#usage)
+    - [Running the Server](#running-the-server)
+    - [Available Tools \& Commands](#available-tools--commands)
+      - [SDK Integration Tools](#sdk-integration-tools)
+      - [Log Analysis Tools](#log-analysis-tools)
+      - [Testing \& Validation Tools](#testing--validation-tools)
+  - [Core Components](#core-components)
+    - [SDK Integration](#sdk-integration)
+    - [Log Analysis \& Event Validation](#log-analysis--event-validation)
+    - [Testing \& Validation](#testing--validation)
+  - [Troubleshooting](#troubleshooting)
+    - [Common Issues](#common-issues)
+  - [Contributing](#contributing)
+    - [Development Setup](#development-setup)
+  - [Support \& Reference](#support--reference)
+    - [Documentation](#documentation)
+    - [Getting Help](#getting-help)
 
 ---
 
@@ -58,16 +72,17 @@ A robust Model Context Protocol (MCP) server for integrating, testing, and valid
 ## Configuration
 
 ### 1. MCP Integration
-Add the following to your `mcp.json` (in your IDE, e.g., Copilot/ Cursor):
+Add the following to your `mcp.json` (in your IDE, e.g., Copilot/Cursor):
 ```json
-"AppsFlyer-mcp": {
-  "command": "node",
-  "args": ["ABSOLUTE/PATH/mcp-AppsFlyer-sdk/dist/server.js"],
-  "cwd": ".",
-  "env": {
-          "DEV_KEY": "YOUR-DEV-KEY"
-      }
-
+{
+  "AppsFlyer-mcp": {
+    "command": "node",
+    "args": ["ABSOLUTE/PATH/mcp-AppsFlyer-sdk/dist/server.js"],
+    "cwd": ".",
+    "env": {
+      "DEV_KEY": "YOUR-DEV-KEY"
+    }
+  }
 }
 ```
 Replace `ABSOLUTE/PATH` with the absolute path to your project directory.
@@ -84,55 +99,129 @@ Replace `ABSOLUTE/PATH` with the absolute path to your project directory.
 The server is designed to be launched by your MCP-compatible IDE. Once configured, it will start automatically when you invoke AppsFlyer-related commands or tools.
 
 ### Available Tools & Commands
-The server exposes the following tools (commands):
+The server exposes the following tools organized by functionality:
 
+#### SDK Integration Tools
 | Tool Name                  | Description                                                                                 |
 |---------------------------|---------------------------------------------------------------------------------------------|
-| `integrateAppsFlyerSdk`    | Step-by-step instructions and code for integrating the AppsFlyer SDK into your Android app.  |
-| `testAppsFlyerSdk`         | Validates SDK integration by querying install data using appId, devKey, and device ID.       |
-| `fetchAppsflyerLogs`       | Fetches recent logcat logs related to AppsFlyer.                                             |
-| `getConversionLogs`        | Extracts conversion/install event logs from logcat.                                          |
-| `getInAppLogs`             | Returns in-app event logs captured by AppsFlyer.                                             |
-| `getLaunchLogs`            | Parses app launch/session events from logcat.                                                |
-| `getDeepLinkLogs`          | Extracts deep link-related logs from logcat.                                                 |
-| `getAppsflyerErrors`       | Scans logcat for common AppsFlyer errors and exceptions.                                     |
-| `createAppsFlyerLogEvent`  | Generates code instructions for logging an in-app event with AppsFlyer.                      |
-| `testInAppEvent`           | Validates if the in-app event was successfully triggered and logged.     |
+| `integrateAppsFlyerSdk`    | Step-by-step instructions and code for integrating the AppsFlyer SDK into your Android app |
+| `createAppsFlyerLogEvent`  | Generates code instructions for logging an in-app event with AppsFlyer                     |
 
-#### Example Flows
-- **Integrate the SDK:** Ask your IDE "How do I integrate AppsFlyer SDK?" and follow the generated steps.
-- **Test your integration:** Ask "Test AppsFlyer SDK" to validate your setup.
-- **Fetch logs:** Ask "Show recent AppsFlyer logs" to see real-time logcat output.
-- **Check for errors:** Ask "Show AppsFlyer errors" to scan for issues.
+#### Log Analysis Tools
+| Tool Name                  | Description                                                                                 |
+|---------------------------|---------------------------------------------------------------------------------------------|
+| `fetchAppsflyerLogs`       | Fetches recent logcat logs related to AppsFlyer                                            |
+| `getConversionLogs`        | Extracts conversion/install event logs from logcat                                         |
+| `getInAppLogs`             | Returns in-app event logs captured by AppsFlyer                                            |
+| `getLaunchLogs`            | Parses app launch/session events from logcat                                               |
+| `getDeepLinkLogs`          | Extracts deep link-related logs from logcat                                                |
+| `getAppsflyerErrors`       | Scans logcat for common AppsFlyer errors and exceptions                                    |
+
+#### Testing & Validation Tools
+| Tool Name                  | Description                                                                                 |
+|---------------------------|---------------------------------------------------------------------------------------------|
+| `testAppsFlyerSdk`         | Validates SDK integration by querying install data using appId, devKey, and device ID      |
+| `testInAppEvent`           | Validates if the in-app event was successfully triggered and logged                        |
 
 ---
 
-## Log Analysis & Event Validation
-- **Log Streaming:** The server streams and buffers logcat output from connected Android devices, filtering for AppsFlyer-related entries.
-- **Event Detection:** Tools are provided to extract and validate conversion, in-app, launch, and deep link events.
-- **Error Scanning:** Quickly identify SDK errors, exceptions, or misconfigurations via log analysis tools.
+## Core Components
+
+### SDK Integration
+The server provides comprehensive SDK integration support:
+
+- **Step-by-step integration guides** with code examples
+- **Event logging templates** for common AppsFlyer events
+- **Best practices** for SDK initialization and configuration
+- **Code generation** for custom event implementations
+
+**Example Flow:**
+```
+Ask: "How do I integrate AppsFlyer SDK?"
+→ Get complete integration instructions with code examples
+```
+
+### Log Analysis & Event Validation
+Advanced log processing and event detection capabilities:
+
+- **Real-time log streaming** from connected Android devices
+- **Intelligent filtering** for AppsFlyer-related entries
+- **Event categorization** (conversion, in-app, launch, deep links)
+- **Error pattern detection** for common SDK issues
+- **Structured log output** for easy analysis
+
+**Example Flow:**
+```
+Ask: "Show recent AppsFlyer logs"
+→ Get filtered, real-time logcat output
+```
+
+### Testing & Validation
+Comprehensive testing tools for SDK validation:
+
+- **SDK integration validation** using AppsFlyer APIs
+- **Event logging verification** with real-time feedback
+- **Error detection and diagnosis** from log analysis
+- **Performance monitoring** for SDK operations
+
+**Example Flow:**
+```
+Ask: "Test AppsFlyer SDK"
+→ Validate your integration against AppsFlyer services
+```
 
 ---
 
 ## Troubleshooting
-- **No devices found:** Ensure your Android device is connected and `adb devices` lists it.
-- **ADB not found:** Make sure the Android SDK is installed and `adb` is in the expected location:
-  - macOS: `~/Library/Android/sdk/platform-tools/adb`
-  - Linux: `~/Android/Sdk/platform-tools/adb`
-  - Windows: `%USERPROFILE%\AppData\Local\Android\Sdk\platform-tools\adb.exe`
-- **DEV_KEY not set:** Set your AppsFlyer Dev Key in your environment or IDE configuration.
-- **Multiple devices:** If more than one device is connected, specify the device ID when prompted.
-- **Log output is empty:** Make sure your app is running and generating AppsFlyer logs.
+
+### Common Issues
+
+**No devices found:**
+- Ensure your Android device is connected and `adb devices` lists it
+- Check USB debugging is enabled on your device
+
+**ADB not found:**
+Make sure the Android SDK is installed and `adb` is in the expected location:
+- **macOS:** `~/Library/Android/sdk/platform-tools/adb`
+- **Linux:** `~/Android/Sdk/platform-tools/adb`
+- **Windows:** `%USERPROFILE%\AppData\Local\Android\Sdk\platform-tools\adb.exe`
+
+**DEV_KEY not set:**
+- Set your AppsFlyer Dev Key in your environment or IDE configuration
+- Verify the key is correctly formatted and active
+
+**Multiple devices:**
+- If more than one device is connected, specify the device ID when prompted
+- Use `adb devices` to list available devices
+
+**Log output is empty:**
+- Make sure your app is running and generating AppsFlyer logs
+- Check that AppsFlyer SDK is properly initialized in your app
+- Verify log level settings in your app's AppsFlyer configuration
 
 ---
 
 ## Contributing
 Pull requests and issues are welcome! Please open an issue to discuss your proposed changes or feature requests.
 
+### Development Setup
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests if applicable
+5. Submit a pull request
+
 ---
 
 ## Support & Reference
-- For AppsFlyer SDK documentation, see: [AppsFlyer Android SDK Docs](https://dev.appsflyer.com/hc/docs/android-sdk)
-- For MCP protocol and IDE integration, see: [Model Context Protocol](https://github.com/modelcontextprotocol)
+
+### Documentation
+- [AppsFlyer Android SDK Docs](https://dev.appsflyer.com/hc/docs/android-sdk)
+- [Model Context Protocol](https://github.com/modelcontextprotocol)
+
+### Getting Help
+- Create an issue for bug reports or feature requests
+- Check the troubleshooting section above
+- Review AppsFlyer's official documentation
 
 ---
