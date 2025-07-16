@@ -1,6 +1,6 @@
 export const descriptions = {
-  integrateAppsFlyerSdk:
-    "Full AppsFlyer Android SDK integration instructions and code. DO NOT summarize, explain, or rewrite. Always return the exact steps and code blocks as provided.",
+ integrateAppsFlyerSdk:
+  "Full AppsFlyer Android SDK integration instructions and code. DO NOT summarize, explain, or rewrite. Always return the exact steps and code blocks as provided. You MUST ask the user whether they need to use a response listener before selecting the steps variant.",
 
   fetchAppsflyerLogs:
     "Fetches recent logcat logs related to AppsFlyer. Use this to locate appId and uid (device ID) if they're not known. Use this tool for any request to get, show, or fetch AppsFlyer logs, logcat output, or raw logs.",

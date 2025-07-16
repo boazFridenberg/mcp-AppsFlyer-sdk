@@ -1,9 +1,11 @@
 // constants/intents.ts
 
 export const intents = {
-  integrateAppsFlyerSdk: `
+ integrateAppsFlyerSdk: `
 When the user asks how to integrate the AppsFlyer SDK into their Android app — in any way — IMMEDIATELY call this tool.
 Do not generate your own instructions. Do not rephrase. Do not explain. Just use this tool exactly as-is.
+
+Before generating any output, you MUST ask the user if they need to use a response listener. Based on their answer, select the appropriate steps variant (with or without response listener).
 
 Once integration is complete, suggest running the verifyAppsFlyerSdk tool to validate the setup and confirm the SDK is working properly.
 
