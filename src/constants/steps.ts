@@ -215,52 +215,54 @@ AppsFlyerLib.getInstance().logEvent(getApplicationContext(), <<Event name>>, eve
   give the user the SHA256 and prompt him to send it back to the marketer.
   Note: Only when the marketer adds the signature to the template can the direct deep linking test be completed.`,
 
+
   ...(isDirect ? [] : [
-    `5A. (Optional) Handle Deferred Deep Linking
-  
-  If you want to support deferred deep linking (when a user clicks a OneLink and installs the app),
-  you must subscribe to the conversion listener when initializing the AppsFlyer SDK.
-  
-  Add the following code:
-  
-  \`\`\`java
-  AppsFlyerConversionListener conversionListener = new AppsFlyerConversionListener() {
-      @Override
-      public void onConversionDataSuccess(Map<String, Object> conversionData) {
-          for (String attrName : conversionData.keySet()) {
-              Log.d(LOG_TAG, "Conversion attribute: " + attrName + " = " + conversionData.get(attrName));
-          }
-  
-          // Check if it's a deferred deep link
-          String deepLinkValue = (String) conversionData.get("af_dp");
-          if (deepLinkValue != null) {
-              Log.d(LOG_TAG, "Deferred Deep Link detected: " + deepLinkValue);
-              // Handle your deep link here (navigate the user accordingly)
-          }
-      }
-  
-      @Override
-      public void onConversionDataFail(String errorMessage) {
-          Log.d(LOG_TAG, "Error getting conversion data: " + errorMessage);
-      }
-  
-      @Override
-      public void onAppOpenAttribution(Map<String, String> attributionData) {}
-  
-      @Override
-      public void onAttributionFailure(String errorMessage) {}
-  };
-  \`\`\`
-  
-  Then initialize the SDK like this:
-  
-  \`\`\`java
-  AppsFlyerLib.getInstance().init("YOUR_DEV_KEY", conversionListener, getApplicationContext());
-  AppsFlyerLib.getInstance().start(getApplicationContext());
-  \`\`\`
-  
-  Note: This block is for deferred deep linking. You can implement it alongside the direct deep link listener.`,
-  ]),
+  `5A. (Optional) Handle Deferred Deep Linking
+
+If you want to support deferred deep linking (when a user clicks a OneLink and installs the app),
+you must subscribe to the conversion listener when initializing the AppsFlyer SDK.
+
+Add the following code:
+
+\`\`\`java
+AppsFlyerConversionListener conversionListener = new AppsFlyerConversionListener() {
+    @Override
+    public void onConversionDataSuccess(Map<String, Object> conversionData) {
+        for (String attrName : conversionData.keySet()) {
+            Log.d(LOG_TAG, "Conversion attribute: " + attrName + " = " + conversionData.get(attrName));
+        }
+
+        // Check if it's a deferred deep link
+        String deepLinkValue = (String) conversionData.get("af_dp");
+        if (deepLinkValue != null) {
+            Log.d(LOG_TAG, "Deferred Deep Link detected: " + deepLinkValue);
+            // Handle your deep link here (navigate the user accordingly)
+        }
+    }
+
+    @Override
+    public void onConversionDataFail(String errorMessage) {
+        Log.d(LOG_TAG, "Error getting conversion data: " + errorMessage);
+    }
+
+    @Override
+    public void onAppOpenAttribution(Map<String, String> attributionData) {}
+
+    @Override
+    public void onAttributionFailure(String errorMessage) {}
+};
+\`\`\`
+
+Then initialize the SDK like this:
+
+\`\`\`java
+AppsFlyerLib.getInstance().init("YOUR_DEV_KEY", conversionListener, getApplicationContext());
+AppsFlyerLib.getInstance().start(getApplicationContext());
+\`\`\`
+
+Note: This block is for deferred deep linking. You can implement it alongside the direct deep link listener.`,
+]),
+
   
     `5. Import code libraries and subscribe to DeepLinkListener 
     explain to the user whate are his next steps after this step is implemented

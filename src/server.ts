@@ -588,16 +588,20 @@ server.registerTool(
         content: [{ type: "text", text: "Please enter your OneLink URL to get customized instructions." }],
       };
     }
+
+    const isDirect = args.isDirect !== undefined ? args.isDirect : true;
+
     return {
       content: [
         {
           type: "text",
-          text: steps.createDirectDeepLink(args.uriScheme != null, true).join('\n\n'),
+          text: steps.createDirectDeepLink(args.uriScheme != null, isDirect).join('\n\n'),
         },
       ],
     };
   }
 );
+
   
 server.registerTool(
   "VerifyAppsFlyerDeepLinkHandled",
