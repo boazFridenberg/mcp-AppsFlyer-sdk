@@ -132,9 +132,16 @@ AppsFlyerLib.getInstance().logEvent(getApplicationContext(), <<Event name>>, eve
 \`\`\``,
         ]),
   ],
-  createDirectDeepLink: (includeUriScheme: boolean) => [
+  createDirectDeepLink: (includeUriScheme: boolean, isDirect: boolean) => [
     `🚨 Copy exactly as written below. Do NOT change anything. Every word matters!\n`,
     `1. Make sure the AppsFlyer SDK is integrated in your app.`,
+    ...(
+      isDirect
+        ? []
+        : [
+            `2. Install the application on your device before proceeding.`,
+          ]
+    ),
     `2. Add the following code to your AndroidManifest.xml file:
   \`\`\`xml
   <intent-filter android:autoVerify="true">

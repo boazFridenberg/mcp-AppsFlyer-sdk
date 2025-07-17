@@ -591,7 +591,7 @@ server.registerTool(
       content: [
         {
           type: "text",
-          text: steps.createDirectDeepLink(args.uriScheme != null).join('\n\n'),
+          text: steps.createDirectDeepLink(args.uriScheme != null, true).join('\n\n'),
         },
       ],
     };
