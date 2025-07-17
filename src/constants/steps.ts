@@ -132,18 +132,12 @@ AppsFlyerLib.getInstance().logEvent(getApplicationContext(), <<Event name>>, eve
 \`\`\``,
         ]),
   ],
-  createDirectDeepLink: (includeUriScheme: boolean, isDirect: boolean) => [
-    `🚨 Copy exactly as written below. Do NOT change anything. Every word matters!\n`,
-    `1. Make sure the AppsFlyer SDK is integrated in your app.`,
-    ...(
-      isDirect
-        ? []
-        : [
-            `2. Install the application on your device before proceeding.`,
-            
-          ]
-    ),
-    `2. Add the following code to your AndroidManifest.xml file:
+  createDeepLink: (includeUriScheme: boolean, mode: boolean) => {
+    if (mode) {
+      return [
+        `🚨 Copy exactly as written below. Do NOT change anything. Every word matters!\n`,
+        `1. Make sure the AppsFlyer SDK is integrated in your app.`,
+        `2. Add the following code to your AndroidManifest.xml file:
   \`\`\`xml
   <intent-filter android:autoVerify="true">
       <action android:name="android.intent.action.VIEW" />
@@ -153,12 +147,10 @@ AppsFlyerLib.getInstance().logEvent(getApplicationContext(), <<Event name>>, eve
           android:host="PUT-HERE-ONE-LINK-DOMAIN"
           android:scheme="https" />
   </intent-filter>
-  \`\`\`
-  `,
-    ...(
-      includeUriScheme
-        ? [
-            `3. (Optional) If you want to support a custom uriScheme, add the following code to your AndroidManifest.xml file as well:
+  \`\`\``,
+        ...(includeUriScheme
+          ? [
+              `3. (Optional) If you want to support a custom uriScheme, add the following code to your AndroidManifest.xml file as well:
   \`\`\`xml
   <intent-filter>
       <action android:name="android.intent.action.VIEW" />
@@ -168,15 +160,11 @@ AppsFlyerLib.getInstance().logEvent(getApplicationContext(), <<Event name>>, eve
           android:host="SECOND-PART"
           android:scheme="FIRST-PART-OF-SCHEME" />
   </intent-filter>
-  \`\`\`
-  `,
-          ]
-        : []
-    ),
-    `4. Generating a SHA256
-
+  \`\`\``,
+            ]
+          : []),
+        `4. Generating a SHA256
   Locate your app's keystore.
-
   If the app is still in development, locate the debug.keystore.
   - For Windows users: C:\\Users\\USERNAME\\.android\\debug.keystore
   - For Linux or Mac OS users: ~/.android/debug.keystore
@@ -186,7 +174,7 @@ AppsFlyerLib.getInstance().logEvent(getApplicationContext(), <<Event name>>, eve
   keytool -list -v -keystore ~/.android/debug.keystore
   \`\`\`
   Note: The password for the debug.keystore is usually "android".
-  The output should look like this: all the info are examples
+  The output should look like this: (example output)
   \`\`\`
   Alias name: test
   Creation date: Sep 27, 2017
@@ -212,108 +200,102 @@ AppsFlyerLib.getInstance().logEvent(getApplicationContext(), <<Event name>>, eve
     ]
   ]
   \`\`\`
-  give the user the SHA256 and prompt him to send it back to the marketer.
+  Give the SHA256 signature to your marketer.
   Note: Only when the marketer adds the signature to the template can the direct deep linking test be completed.`,
-
-
-  ...(isDirect ? [] : [
-  `5A. (Optional) Handle Deferred Deep Linking
-
-If you want to support deferred deep linking (when a user clicks a OneLink and installs the app),
-you must subscribe to the conversion listener when initializing the AppsFlyer SDK.
-
-Add the following code:
-
-\`\`\`java
-AppsFlyerConversionListener conversionListener = new AppsFlyerConversionListener() {
-    @Override
-    public void onConversionDataSuccess(Map<String, Object> conversionData) {
-        for (String attrName : conversionData.keySet()) {
-            Log.d(LOG_TAG, "Conversion attribute: " + attrName + " = " + conversionData.get(attrName));
-        }
-
-        // Check if it's a deferred deep link
-        String deepLinkValue = (String) conversionData.get("af_dp");
-        if (deepLinkValue != null) {
-            Log.d(LOG_TAG, "Deferred Deep Link detected: " + deepLinkValue);
-            // Handle your deep link here (navigate the user accordingly)
-        }
-    }
-
-    @Override
-    public void onConversionDataFail(String errorMessage) {
-        Log.d(LOG_TAG, "Error getting conversion data: " + errorMessage);
-    }
-
-    @Override
-    public void onAppOpenAttribution(Map<String, String> attributionData) {}
-
-    @Override
-    public void onAttributionFailure(String errorMessage) {}
-};
-\`\`\`
-
-Then initialize the SDK like this:
-
-\`\`\`java
-AppsFlyerLib.getInstance().init("YOUR_DEV_KEY", conversionListener, getApplicationContext());
-AppsFlyerLib.getInstance().start(getApplicationContext());
-\`\`\`
-
-Note: This block is for deferred deep linking. You can implement it alongside the direct deep link listener.`,
-]),
-
+        `5. Import code libraries and subscribe to DeepLinkListener
   
-    `5. Import code libraries and subscribe to DeepLinkListener 
-    explain to the user whate are his next steps after this step is implemented
-
-Import the following libraries:
-
-\`\`\`java
-import com.appsflyer.deeplink.DeepLink;
-import com.appsflyer.deeplink.DeepLinkListener;
-import com.appsflyer.deeplink.DeepLinkResult;
-\`\`\`
-
-Create and subscribe the DeepLinkListener (example for your file. put the code in the correct file):
-
-\`\`\`java
-public class ExampleApp extends Application {
-    @Override
-    public void onCreate() {
-        super.onCreate();
-        
-        // ...
-        AppsFlyerLib.subscribeForDeepLink(new DeepLinkListener) {
-         @Override
-         public void onDeepLinking(@NonNull DeepLinkResult deepLinkResult) {
-             DeepLinkResult.Status dlStatus = deepLinkResult.getStatus();
-             if (dlStatus == DeepLinkResult.Status.NOT_FOUND) {
-                 Log.d(LOG_TAG, "Deep link not found");
-                 return;
-             } else if (dlStatus ==  DeepLinkResult.Status.ERROR){
-                 DeepLinkResult.Error dlError = deepLinkResult.getError();
-                 Log.d(LOG_TAG, "There was an error getting Deep Link data: " + dlError.toString());
-                 return;
-             } else {
-                 // dlStatus == DeepLinkResult.Status.FOUND) {
-                 Log.d(LOG_TAG, "Deep link found");
-             }
-           DeepLink deepLinkObj = deepLinkResult.getDeepLink();
-             try {
-                 Log.d(LOG_TAG, "The DeepLink data is: " + deepLinkObj.toString());
-                var deepLinkDestination = deepLinkObj.getDeepLinkValue();
-                 // Your code for handling the deeplink data let the user write here freely            
+  Import the following libraries:
+  
+  \`\`\`java
+  import com.appsflyer.deeplink.DeepLink;
+  import com.appsflyer.deeplink.DeepLinkListener;
+  import com.appsflyer.deeplink.DeepLinkResult;
+  \`\`\`
+  
+  Create and subscribe the DeepLinkListener (example, put this in your Application class or similar):
+  
+  \`\`\`java
+  public class ExampleApp extends Application {
+      @Override
+      public void onCreate() {
+          super.onCreate();
+  
+          AppsFlyerLib.subscribeForDeepLink(new DeepLinkListener() {
+              @Override
+              public void onDeepLinking(@NonNull DeepLinkResult deepLinkResult) {
+                  DeepLinkResult.Status dlStatus = deepLinkResult.getStatus();
+                  if (dlStatus == DeepLinkResult.Status.NOT_FOUND) {
+                      Log.d(LOG_TAG, "Deep link not found");
+                      return;
+                  } else if (dlStatus == DeepLinkResult.Status.ERROR){
+                      DeepLinkResult.Error dlError = deepLinkResult.getError();
+                      Log.d(LOG_TAG, "There was an error getting Deep Link data: " + dlError.toString());
+                      return;
+                  } else {
+                      Log.d(LOG_TAG, "Deep link found");
+                  }
+                  DeepLink deepLinkObj = deepLinkResult.getDeepLink();
+                  try {
+                      Log.d(LOG_TAG, "The DeepLink data is: " + deepLinkObj.toString());
+                      String deepLinkDestination = deepLinkObj.getDeepLinkValue();
+                      // Your code for handling the deeplink data here
                   } catch (Exception e) {
-                 Log.d(LOG_TAG, "DeepLink data came back null");
-                  return;
-             }       
-         }
+                      Log.d(LOG_TAG, "DeepLink data came back null");
+                      return;
+                  }
+              }
+          });
       }
+  }
+  \`\`\``,
+      ];
+    } else {
+      return [
+        `🚨 Copy exactly as written below. Do NOT change anything. Every word matters!\n`,
+        `1. Make sure the AppsFlyer SDK is integrated in your app.`,
+        `2. Install the application on your device before proceeding.`,
+        `3. (Optional) Handle Deferred Deep Linking by subscribing to the conversion listener when initializing the AppsFlyer SDK.`,
+  
+        `Add the following code:`,
+  
+        `\`\`\`java
+  AppsFlyerConversionListener conversionListener = new AppsFlyerConversionListener() {
+      @Override
+      public void onConversionDataSuccess(Map<String, Object> conversionData) {
+          for (String attrName : conversionData.keySet()) {
+              Log.d(LOG_TAG, "Conversion attribute: " + attrName + " = " + conversionData.get(attrName));
+          }
+  
+          // Check if it's a deferred deep link
+          String deepLinkValue = (String) conversionData.get("af_dp");
+          if (deepLinkValue != null) {
+              Log.d(LOG_TAG, "Deferred Deep Link detected: " + deepLinkValue);
+              // Handle your deep link here (navigate the user accordingly)
+          }
+      }
+  
+      @Override
+      public void onConversionDataFail(String errorMessage) {
+          Log.d(LOG_TAG, "Error getting conversion data: " + errorMessage);
+      }
+  
+      @Override
+      public void onAppOpenAttribution(Map<String, String> attributionData) {}
+  
+      @Override
+      public void onAttributionFailure(String errorMessage) {}
+  };
+  \`\`\``,
+  
+        `Then initialize the SDK like this:`,
+  
+        `\`\`\`java
+  AppsFlyerLib.getInstance().init("YOUR_DEV_KEY", conversionListener, getApplicationContext());
+  AppsFlyerLib.getInstance().start(getApplicationContext());
+  \`\`\``,
+  
+        `Note: This block is for deferred deep linking. You can implement it alongside the direct deep link listener.`,
+      ];
     }
-}
-\`\`\``
-  ],
-  
-};
-  
+  }
+}  

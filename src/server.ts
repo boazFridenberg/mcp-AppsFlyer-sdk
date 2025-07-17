@@ -566,7 +566,6 @@ server.registerTool(
     } as { [x: string]: unknown; content: { type: "text"; text: string; _meta?: { [x: string]: unknown } }[] };
   }
 );
-
 server.registerTool(
   "createDirectDeepLink",
   {
@@ -589,13 +588,13 @@ server.registerTool(
       };
     }
 
-    const isDirect = args.isDirect !== undefined ? args.isDirect : true;
+    const mode = args.isDirect === false ? "deferred" : "direct";
 
     return {
       content: [
         {
           type: "text",
-          text: steps.createDirectDeepLink(args.uriScheme != null, isDirect).join('\n\n'),
+          text: (steps.createDeepLink(args.uriScheme != null, mode === "direct") ?? []).join('\n\n'),
         },
       ],
     };
