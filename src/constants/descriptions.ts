@@ -23,8 +23,21 @@ export const descriptions = {
   verifyAppsFlyerSdk:
     "Tests whether the AppsFlyer SDK is integrated correctly by querying install data using appId, devKey, and device ID (uid). appId and uid are automatically extracted from recent logs. devKey is in env in mcp.json. If not found, the user will be asked to provide it. When the user asks to test the AppsFlyer SDK or check if it's working, this tool should be run immediately without attempting to infer or construct the test manually.",
 
-  createAppsFlyerLogEvent:
-    "Generates exact code instructions for logging an in-app event using AppsFlyer. Always use this tool when a user asks to create/add/write a new appsflyer in-app event. before Proceeding ask the user to choose an event name Do not make an event name on your own. Do not answer manually. before prociding make sure the appsflyer sdk is integrated in case it is not integrated run the integrateAppsflyerSdk tool",
+  createAppsFlyerLogEvent: `
+Generates exact Java code for logging an in-app event using the AppsFlyer Android SDK.
+
+🟢 Before generating code, this tool will ask the user three required inputs in order:
+1. Whether to use a response listener (true/false).
+2. The event name to log (do not create automatically).
+3. A list of event parameter names (values are NOT requested).
+
+⚠️ The generated code will have placeholders "<<ENTER VALUE>>" for each parameter value — replace them manually.
+
+🔄 Ensure the AppsFlyer SDK is integrated in the project.  
+If not integrated, run the integrateAppsFlyerSdk tool before proceeding.
+
+✅ Always use this tool when the user wants to create, add, or write a new AppsFlyer in-app event.
+`,
 
   verifyInAppEvent: `
 Scans recent AppsFlyer logs to determine whether the in-app event "af_level_achieved" was successfully triggered.

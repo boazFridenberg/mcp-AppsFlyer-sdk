@@ -373,95 +373,59 @@ server.registerTool(
     };
   }
 );
-
 server.registerTool(
   "createAppsFlyerLogEvent",
   {
     title: "Create AppsFlyer Log Event",
     description: descriptions.createAppsFlyerLogEvent,
     inputSchema: {
-      eventName: z.string().optional(),
-      eventParams: z.record(z.any()).optional(),
-      hasListener: z.enum(["yes", "no"]).optional(),
+      hasListener: z.boolean().describe("Whether to use a response listener"),
+      eventName: z.string().describe("The name of the event to log"),
+      eventParams: z
+        .array(z.string())
+        .nonempty()
+        .describe(
+          "List of parameter names to send with the event (values will be added manually later)"
+        ),
     },
     annotations: {
       intent: intents.createAppsFlyerLogEvent,
       keywords: keywords.createAppsFlyerLogEvent,
     },
-
   },
   async (args, extra) => {
-    const rootDir = await new Promise((resolve) => {
-      exec("pwd", (error, stdout) => {
-        if (error) {
-          resolve(process.cwd());
-        } else {
-          resolve(stdout.trim());
-        }
-      });
-    });
-  
-    const ignoredDirs = new Set([
-      ".Trash",
-      "node_modules",
-      ".git",
-      "build",
-      "out",
-      ".gradle",
-      "Library",
-      "__MACOSX",
-    ]);
-
-    async function safeGetProjectFiles(
-      dir: string,
-      extensions: string[] = [".java", ".kt"]
-    ): Promise<string[]> {
-      const resolvedDir = path.resolve(String(dir));
-      const rootDirStr = String(rootDir);
-      if (!resolvedDir.startsWith(rootDirStr)) {
-        throw new Error(`Access denied outside project root: ${resolvedDir}`);
-      }
-
-      let results: string[] = [];
-      try {
-        const entries = await fs.promises.readdir(resolvedDir, { withFileTypes: true });
-        for (const entry of entries) {
-          const dirent = entry as fs.Dirent;
-          if (ignoredDirs.has(dirent.name)) continue;
-          const fullPath = path.join(String(resolvedDir), dirent.name);
-          if (dirent.isDirectory()) {
-            results.push(...(await safeGetProjectFiles(fullPath, extensions)));
-          } else if (typeof dirent.name === 'string' && extensions.some((ext) => dirent.name.endsWith(ext))) {
-            results.push(fullPath);
-          }
-        }
-      } catch {
-        // ignore permission errors
-      }
-      return results;
-    }
-
+    const hasListener = args.hasListener;
     const eventName = args.eventName?.trim();
-    const eventParams = args.eventParams || {};
-    const hasListener = args.hasListener?.toLowerCase() === "yes";
+    const eventParams = args.eventParams;
+
+    if (hasListener === undefined) {
+      return {
+        content: [
+          {
+            type: "text",
+            text: "❗ Please specify whether to use a response listener (true/false).",
+          },
+        ],
+      };
+    }
 
     if (!eventName) {
       return {
         content: [
           {
             type: "text",
-            text: "❗ Missing event name. Please provide eventName to continue.",
+            text: "❗ Please enter the name of the event (eventName).",
           },
         ],
       };
     }
 
-    if (Object.entries(eventParams).length === 0) {
+    if (!Array.isArray(eventParams) || eventParams.length === 0) {
       return {
         content: [
           {
             type: "text",
-            text: "❗ Missing event parameters. Please provide at least one parametr.",
+            text: "❗ Please provide at least one parameter name for the event (eventParams).",
           },
         ],
       };
@@ -469,63 +433,67 @@ server.registerTool(
 
     function generateJavaCode(
       eventName: string,
-      eventParams: Record<string, any>,
+      eventParams: string[],
       includeListener: boolean
     ): string[] {
-      const paramLines = Object.keys(eventParams)
-        .map((key) => `eventValues.put("${key}", <<ENTER VALUE FOR ${key}>>);`)
+      const paramLines = eventParams
+        .map((key) => `eventValues.put("${key}", <<ENTER VALUE>>);`)
         .join("\n");
-  
+
       const code = includeListener
         ? `
-    import com.appsflyer.AppsFlyerLib;
-    import com.appsflyer.AFInAppEventType; // Predefined event names
-    import com.appsflyer.AFInAppEventParameterName; // Predefined parameter names
-    import com.appsflyer.attribution.AppsFlyerRequestListener;
-    
-    Map<String, Object> eventValues = new HashMap<String, Object>();
-    ${paramLines}
-    
-    AppsFlyerLib.getInstance().logEvent(
-        getApplicationContext(),
-        "${eventName}",
-        eventValues,
-        new AppsFlyerRequestListener() {
-            @Override
-            public void onSuccess() {
-                // YOUR CODE UPON SUCCESS
-            }
-    
-            @Override
-            public void onError(int i, String s) {
-                // YOUR CODE FOR ERROR HANDLING
-            }
+import com.appsflyer.AppsFlyerLib;
+import com.appsflyer.AFInAppEventType;
+import com.appsflyer.AFInAppEventParameterName;
+import com.appsflyer.attribution.AppsFlyerRequestListener;
+
+Map<String, Object> eventValues = new HashMap<String, Object>();
+${paramLines}
+AppsFlyerLib.getInstance().logEvent(
+    getApplicationContext(),"${eventName}", eventValues,
+    new AppsFlyerRequestListener() {
+        @Override
+        public void onSuccess() {
+            // YOUR CODE UPON SUCCESS
         }
-    );
-    `
+
+        @Override
+        public void onError(int i, String s) {
+            // YOUR CODE FOR ERROR HANDLING
+        }
+    }
+);
+        `
         : `
-    import com.appsflyer.AppsFlyerLib;
-    import com.appsflyer.AFInAppEventType; // Predefined event names
-    import com.appsflyer.AFInAppEventParameterName; // Predefined parameter names
-    
-    Map<String, Object> eventValues = new HashMap<String, Object>();
-    ${paramLines}
-    
-    AppsFlyerLib.getInstance().logEvent(
-        getApplicationContext(),
-        "${eventName}",
-        eventValues
-    );
-    `;
-  
+import com.appsflyer.AppsFlyerLib;
+import com.appsflyer.AFInAppEventType;
+import com.appsflyer.AFInAppEventParameterName;
+
+Map<String, Object> eventValues = new HashMap<String, Object>();
+${paramLines}
+
+AppsFlyerLib.getInstance().logEvent(
+    getApplicationContext(),
+    "${eventName}", eventValues
+);
+        `;
+
       return code.trim().split("\n");
     }
 
-    // Add your main logic here (e.g., generate and return the Java code)
-    // For now, add a fallback return to ensure a valid return value
-    return { content: [] };
+    const codeLines = generateJavaCode(eventName, eventParams, hasListener);
+
+    return {
+      content: [
+        {
+          type: "text",
+          text: `Java code to log the event:\n\n\`\`\`java\n${codeLines.join("\n")}\`\`\`\n\n📌 Please manually replace each <<ENTER VALUE>> in the generated code with the appropriate value for the parameter.`,
+        },
+      ],
+    };
   }
 );
+
 
 server.registerTool(
   "verifyInAppEvent",
