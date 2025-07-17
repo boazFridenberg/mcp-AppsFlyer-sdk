@@ -73,7 +73,9 @@ Run the **verifyAppsFlyerSdk** tool to confirm the integration was successful an
   If the SDK is not integrated, ask the user to run the tool:
   👉 \`integrateAppsFlyerSdk\``,
     `**2. Import predefined event names**`,
-    `**3. Import predefined event parameter names and Map.**  
+    `**3. Import predefined event parameter names and Map.** , 
+          import com.appsflyer.AFInAppEventType; // Predefined event names,
+          import com.appsflyer.AFInAppEventParameterName; // Predefined parameter names
   \`\`\`java
  import java.util.HashMap;
   import java.util.Map;
@@ -83,10 +85,8 @@ Run the **verifyAppsFlyerSdk** tool to confirm the integration was successful an
       ? [
           `**4. Import the response listener**  
   \`\`\`java
-  import com.appsflyer.AppsFlyerLib;
-import com.appsflyer.AFInAppEventType; // Predefined event names
-import com.appsflyer.AFInAppEventParameterName; // Predefined parameter names
-import com.appsflyer.attribution.AppsFlyerRequestListener;
+      import com.appsflyer.AppsFlyerLib;
+      import com.appsflyer.attribution.AppsFlyerRequestListener;
   \`\`\``,
   
           `**5. Create a Map and add parameters**  
