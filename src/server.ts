@@ -534,14 +534,39 @@ server.registerTool(
   "appsFlyerJsonEvent",
   {
     title: "AppsFlyer JSON Event Generator",
-    description: "Generate AppsFlyer Java code from JSON event definitions. Can search for JSON files in project or accept direct JSON input.",
+    description:
+      "Generate ready-to-use Java code for logging an in-app event with AppsFlyer. " +
+      "Before generating, the tool will ask you how you want to provide the JSON input:\n" +
+      "1. Search for JSON files in the project (with a search pattern and optional path).\n" +
+      "2. Paste JSON string directly.\n" +
+      "3. Provide a direct file path to a JSON file.\n" +
+      "After you choose, it will generate the Java code accordingly.",
     inputSchema: {
-      inputFile: z.string().optional().describe("JSON string of event definitions or file path"),
-      searchPattern: z.string().optional().describe("Search pattern for JSON files (e.g., '*.json', 'events.json')"),
-      projectPath: z.string().optional().describe("Project directory path to search in"),
+      // Inputs are optional initially, because we ask interactively
+      inputMethod: z
+        .enum(["search", "paste", "filepath"])
+        .optional()
+        .describe(
+          "Choose how to provide JSON input: search files, paste JSON, or filepath"
+        ),
+      searchPattern: z
+        .string()
+        .optional()
+        .describe(
+          "Search pattern for JSON files (e.g., '*.json', 'events.json')"
+        ),
+      projectPath: z
+        .string()
+        .optional()
+        .describe("Project directory path to search in"),
+      pastedJson: z.string().optional().describe("Directly pasted JSON string"),
+      filePath: z.string().optional().describe("Direct file path to JSON file"),
     },
     annotations: {
-      intent: "Generate AppsFlyer Java code from JSON event definitions or files.",
+      intent: [
+        "When user asks about AppsFlyer in-app event logging, IMMEDIATELY trigger this tool.",
+        "If user mentions JSON event input or AppsFlyer code generation from JSON, trigger this tool.",
+      ],
       keywords: [
         "json event appsflyer",
         "generate appsflyer code",
@@ -549,206 +574,229 @@ server.registerTool(
         "event generator",
         "apps flyer event json",
         "generate java code from json",
-        "apps flyer event file"
+        "apps flyer event file",
       ],
     },
   },
   async (args, _extra) => {
-    const { inputFile, searchPattern, projectPath } = args;
-    // Show usage instructions if no input provided
-    if (!inputFile && !searchPattern) {
+    // Step 1: If no inputMethod, ask user which input method to use
+    if (!args.inputMethod) {
       return {
         content: [
           {
             type: "text",
-            text: [
-              "📄 **AppsFlyer JSON Event Generator**",
-              "",
-              "You can use this tool in two ways:",
-              "",
-              "🔍 **Search for JSON files:**",
-              "• Specify a search pattern (e.g., 'events.json', '*.json')",
-              "• Optionally specify project path",
-              "",
-              "📝 **Direct JSON input:**",
-              "• Provide JSON string directly",
-              "",
-              "**Example JSON format:**",
-              "```json",
-              "{",
-              '  "events": [',
-              "    {",
-              '      "eventIdentifier": "af_purchase",',
-              '      "parameters": [',
-              "        {",
-              '          "parameterIdentifier": "af_revenue",',
-              '          "parameterValueExample": 29.99',
-              "        }",
-              "      ]",
-              "    }",
-              "  ]",
-              "}",
-              "```",
-              "",
-              "💡 **Usage examples:**",
-              "• 'Generate AppsFlyer code from events.json'",
-              "• 'Search for *.json files and generate AppsFlyer code'",
-              "• 'Generate AppsFlyer code from {\"events\": [...]}')"
-            ].join("\n")
-          }
-        ]
+            text:
+              "Please choose how to provide the JSON input for AppsFlyer events:\n" +
+              "1️⃣ Type 'search' to search for JSON files in your project.\n" +
+              "2️⃣ Type 'paste' to paste JSON text directly.\n" +
+              "3️⃣ Type 'filepath' to provide a path to a JSON file.",
+          },
+        ],
       };
     }
+
+    // Step 2: Depending on inputMethod, check required fields or ask for them
+
     let jsonContent = "";
-    // If search pattern provided, search for files
-    if (searchPattern) {
+
+    if (args.inputMethod === "search") {
+      // Require searchPattern, ask if missing
+      if (!args.searchPattern) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: "Please provide the search pattern for JSON files (e.g., '*.json', 'events.json').",
+            },
+          ],
+        };
+      }
+      // projectPath is optional, default to cwd
+      const searchPath = args.projectPath || process.cwd();
+      const pattern = path.join(searchPath, args.searchPattern);
       try {
-        const searchPath = projectPath || process.cwd();
-        const pattern = path.join(searchPath, searchPattern);
-        // Use glob's async API
         const files = await glob(pattern);
         if (!Array.isArray(files) || files.length === 0) {
           return {
-            content: [{
-              type: "text",
-              text: `🔍 No files found matching pattern: ${searchPattern}\n\nSearched in: ${searchPath}`
-            }]
+            content: [
+              {
+                type: "text",
+                text: `No files found matching pattern '${args.searchPattern}' in path '${searchPath}'.`,
+              },
+            ],
           };
         }
-        // If multiple files found, show options
-        if (files.length > 1) {
-          const fileList = files.map((file, index) => `${index + 1}. ${file}`).join('\n');
+        if (files.length > 1 && !args.filePath) {
+          // Ask user to specify exact file if multiple found and no filepath provided
+          const fileList = files.map((f, i) => `${i + 1}. ${f}`).join("\n");
           return {
-            content: [{
-              type: "text",
-              text: `📁 Found ${files.length} files:\n\n${fileList}\n\n💡 Please specify the exact file name to process.`
-            }]
+            content: [
+              {
+                type: "text",
+                text:
+                  `Multiple files found matching pattern:\n${fileList}\n\n` +
+                  "Please specify the exact file path from the list by typing it.",
+              },
+            ],
           };
         }
-        // Read the single file found
-        const filePath = files[0];
+        // If one file found or filePath provided, read that file
+        const chosenFile = args.filePath ? args.filePath : files[0];
         try {
-          jsonContent = await fs.promises.readFile(filePath, 'utf8');
-        } catch (error: any) {
+          jsonContent = await fs.promises.readFile(chosenFile, "utf8");
+        } catch (err: any) {
           return {
-            content: [{
-              type: "text",
-              text: `❌ Error reading file ${filePath}: ${error.message}`
-            }]
+            content: [
+              {
+                type: "text",
+                text: `Error reading file '${chosenFile}': ${err.message}`,
+              },
+            ],
           };
         }
-      } catch (error: any) {
+      } catch (err: any) {
         return {
-          content: [{
-            type: "text",
-            text: `❌ Error searching for files: ${error.message}`
-          }]
+          content: [
+            {
+              type: "text",
+              text: `Error searching files: ${err.message}`,
+            },
+          ],
         };
       }
-    } else if (inputFile) {
-      // Try to determine if input is a file path or JSON string
-      if (inputFile.trim().endsWith('.json')) {
-        // Treat as file path
-        try {
-          const filePath = path.resolve(inputFile);
-          jsonContent = await fs.promises.readFile(filePath, 'utf8');
-        } catch (error: any) {
-          return {
-            content: [{
+    } else if (args.inputMethod === "paste") {
+      // Require pastedJson
+      if (!args.pastedJson) {
+        return {
+          content: [
+            {
               type: "text",
-              text: `❌ Error reading file ${inputFile}: ${error.message}`
-            }]
-          };
-        }
-      } else {
-        // Treat as JSON string
-        jsonContent = inputFile;
+              text: "Please paste the JSON string of your event definitions.",
+            },
+          ],
+        };
+      }
+      jsonContent = args.pastedJson;
+    } else if (args.inputMethod === "filepath") {
+      // Require filePath
+      if (!args.filePath) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: "Please provide the full file path to the JSON file.",
+            },
+          ],
+        };
+      }
+      try {
+        jsonContent = await fs.promises.readFile(args.filePath, "utf8");
+      } catch (err: any) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Error reading file '${args.filePath}': ${err.message}`,
+            },
+          ],
+        };
       }
     } else {
       return {
-        content: [{
-          type: "text",
-          text: "❗ Please provide either JSON input or a search pattern for JSON files."
-        }]
+        content: [
+          {
+            type: "text",
+            text: "Unknown input method. Please choose one of: 'search', 'paste', or 'filepath'.",
+          },
+        ],
       };
     }
-    // Parse JSON
+
+    // Now parse and generate code
+
     let parsed;
     try {
       parsed = JSON.parse(jsonContent);
-    } catch (error: any) {
+    } catch (err: any) {
       return {
-        content: [{
-          type: "text",
-          text: `❌ Invalid JSON format: ${error.message}`
-        }]
+        content: [
+          {
+            type: "text",
+            text: `Invalid JSON format: ${err.message}`,
+          },
+        ],
       };
     }
-    // Normalize structure
+
     if (Array.isArray(parsed)) {
       parsed = { events: parsed };
     }
+
     if (!parsed.events || !Array.isArray(parsed.events)) {
       return {
-        content: [{
-          type: "text",
-          text: "⚠️ JSON must contain an 'events' array."
-        }]
+        content: [
+          {
+            type: "text",
+            text: "JSON must contain an 'events' array.",
+          },
+        ],
       };
     }
-    const events = parsed.events;
-    if (events.length === 0) {
+
+    if (parsed.events.length === 0) {
       return {
-        content: [{
-          type: "text",
-          text: "⚠️ No events found in the JSON file."
-        }]
+        content: [
+          {
+            type: "text",
+            text: "No events found in the JSON input.",
+          },
+        ],
       };
     }
-    // Generate Java code for each event
+
     const generateJavaCodeForEvent = (event: any) => {
-      const eventName = event.eventIdentifier || event.eventName || "event_unknown";
+      const eventName =
+        event.eventIdentifier || event.eventName || "event_unknown";
       const params = event.parameters || [];
       const paramLines = params.map((param: any) => {
-        const key = param.parameterIdentifier || param.parameterName || "param_unknown";
-        const val = typeof param.parameterValueExample === "string"
-          ? `"${param.parameterValueExample}"`
-          : param.parameterValueExample !== undefined
-          ? param.parameterValueExample
-          : `"value"`;
-        return `eventValues.put("${key}", ${val});`;
+        const key =
+          param.parameterIdentifier || param.parameterName || "param_unknown";
+        return `eventValues.put("${key}", <<PLACE_HOLDRER_FOR_PARAM_VALUE>>);`;
       });
       return [
         `// Event: ${eventName}`,
         `Map<String, Object> eventValues = new HashMap<>();`,
         ...paramLines,
-        `AppsFlyerLib.getInstance().logEvent(context, "${eventName}", eventValues);`,
+        `AppsFlyerLib.getInstance().logEvent(getApplicationContext(), "${eventName}", eventValues);`,
         ``,
       ].join("\n");
     };
-    const javaCode = events.map(generateJavaCodeForEvent).join("\n");
+
+    const javaCode = parsed.events.map(generateJavaCodeForEvent).join("\n");
+
     return {
       content: [
         {
           type: "text",
           text: [
-            `✅ **Generated Java code for ${events.length} event${events.length === 1 ? '' : 's'}:**`,
+            `✅ Generated Java code for ${parsed.events.length} event${parsed.events.length === 1 ? "" : "s"}:`,
             "",
             "```java",
             javaCode,
             "```",
             "",
-            "💡 **Usage notes:**",
+            "💡 Usage notes:",
             "• Import: `import com.appsflyer.AppsFlyerLib;`",
             "• Import: `import java.util.HashMap;`",
             "• Import: `import java.util.Map;`",
-            "• Make sure `context` is available in your scope"
+            "• Make sure `getApplicationContext()` or appropriate context is available",
           ].join("\n"),
         },
       ],
     };
   }
 );
+
 
 async function startServer() {
   try {
