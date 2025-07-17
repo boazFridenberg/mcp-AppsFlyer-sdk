@@ -120,8 +120,13 @@ export const keywords = {
     "android deep link",
     "deep link verification",
     "appsflyer onelink",
-    "app links"
-  ]
+    "app links",
+    "uriScheme",
+    "intent-filter",
+    "deep link"
+  ],
+
+  createDirectDeepLink: ['deep link', 'direct', 'onelink', 'uriScheme']
   };
   
   

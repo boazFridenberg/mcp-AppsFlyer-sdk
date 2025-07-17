@@ -568,12 +568,13 @@ server.registerTool(
 );
 
 server.registerTool(
-  "AppsFlyerOneLinkDeepLinkSetupPrompt",
+  "createDirectDeepLink",
   {
-    title: "AppsFlyer OneLink Deep Link Setup Prompt",
-    description: descriptions.AppsFlyerOneLinkDeepLinkSetupPrompt,
+    title: "AppsFlyer OneLink Direct Deep Link Setup Prompt",
+    description: descriptions.createDirectDeepLink,
     inputSchema: {
-      oneLinkUrl: z.string().url().optional(),
+      oneLinkUrl: z.string().url(),
+      uriScheme: z.string().optional(),
     },
     annotations: {
       intent: intents.AppsFlyerOneLinkDeepLinkSetupPrompt,
@@ -586,12 +587,11 @@ server.registerTool(
         content: [{ type: "text", text: "Please enter your OneLink URL to get customized instructions." }],
       };
     }
-    const stepsWithReplacements = replaceOneLinkPlaceholders(steps.AppsFlyerOneLinkDeepLinkSetupPrompt, args.oneLinkUrl);
     return {
       content: [
         {
           type: "text",
-          text: stepsWithReplacements.join("\n\n"),
+          text: steps.createDirectDeepLink(args.uriScheme != null).join('\n\n'),
         },
       ],
     };

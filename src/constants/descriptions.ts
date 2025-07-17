@@ -46,8 +46,8 @@ Detects and analyzes deep links triggered from AppsFlyer logs, including type (d
   VerifyAppsFlyerDeepLinkHandled: `
 Verifies that a deep link triggered a flow in the app by analyzing logs for activity starts, routing, and deep link values. Use this tool to confirm that the app responded to a deep link as expected.`,
 
-  AppsFlyerOneLinkDeepLinkSetupPrompt: `
-Prompts the user if they want to see instructions to set up deep linking with AppsFlyer OneLink. Use this tool to offer setup guidance for deep linking integration.`,
+createDirectDeepLink: `
+ Use this tool to create direct deep linking integration in the app. before doing so prompt the user to enter a onelink url and optianlly a uri scheme. if the user asks whats a onelink url prompt him to ask his marketer for it`,
 };
 
 

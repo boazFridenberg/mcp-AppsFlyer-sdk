@@ -68,4 +68,6 @@ If the user wants to verify that a deep link triggered a flow in the app, use th
 
   AppsFlyerOneLinkDeepLinkSetupPrompt: `
 If the user asks about setting up deep linking with AppsFlyer OneLink, use this tool to prompt for setup instructions. Do not generate setup steps yourself.`,
+
+  createDirectDeepLink: 'create direct deep link',
 };
