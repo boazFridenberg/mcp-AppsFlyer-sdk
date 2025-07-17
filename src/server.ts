@@ -9,7 +9,8 @@ import { descriptions } from "./constants/descriptions.js";
 import { intents } from "./constants/intents.js";
 import { keywords } from "./constants/keywords.js";
 import { steps } from "./constants/steps.js";
-import { extractAppsflyerDeeplinkInfo } from "./logcat/parse.js";
+import { replaceOneLinkPlaceholders } from "./logcat/parse.js";
+
 
 const server = new McpServer({
   name: "appsflyer-logcat-mcp-server",
@@ -572,7 +573,7 @@ server.registerTool(
     title: "AppsFlyer OneLink Deep Link Setup Prompt",
     description: descriptions.AppsFlyerOneLinkDeepLinkSetupPrompt,
     inputSchema: {
-      wantsInstructions: z.enum(["yes", "no"]).optional(),
+      oneLinkUrl: z.string().url().optional(),
     },
     annotations: {
       intent: intents.AppsFlyerOneLinkDeepLinkSetupPrompt,
@@ -580,30 +581,12 @@ server.registerTool(
     },
   },
   async (args) => {
-    if (!args.wantsInstructions) {
+    if (!args.oneLinkUrl) {
       return {
-        content: [
-          {
-            type: "text",
-            text: "Do you want instructions to setup deep linking with AppsFlyer OneLink? (yes/no)",
-          },
-        ],
+        content: [{ type: "text", text: "Please enter your OneLink URL to get customized instructions." }],
       };
     }
-
-    if (args.wantsInstructions === "no") {
-      return {
-        content: [
-          {
-            type: "text",
-            text: "OK, no problem. Let me know if you need anything else!",
-          },
-        ],
-      };
-    }
-
-    // Use steps.AppsFlyerOneLinkDeepLinkSetupPrompt as the steps array
-    const stepsWithReplacements = steps.AppsFlyerOneLinkDeepLinkSetupPrompt;
+    const stepsWithReplacements = replaceOneLinkPlaceholders(steps.AppsFlyerOneLinkDeepLinkSetupPrompt, args.oneLinkUrl);
     return {
       content: [
         {
@@ -614,125 +597,90 @@ server.registerTool(
     };
   }
 );
-
-server.registerTool(
-  "DetectAppsFlyerDeepLink",
-  {
-    title: "Detect AppsFlyer Deep Link",
-    description: descriptions.DetectAppsFlyerDeepLink,
-    inputSchema: {},
-    annotations: {
-      intent: intents.DetectAppsFlyerDeepLink,
-      keywords: keywords.DetectAppsFlyerDeepLink,
-    },
-  },
-  async () => {
-    const logsText = logBuffer.join("\n");
-    if (!logsText || logsText.trim() === "") {
-      return {
-        content: [{ type: "text", text: "⚠️ No logs found in buffer. Try fetching logs again." }],
-      };
-    }
-
-    // Check if AppsFlyer SDK is connected
-    const sdkConnected = /AppsFlyerLib|AppsFlyer SDK/i.test(logsText);
-    if (!sdkConnected) {
-      return {
-        content: [
-          {
-            type: "text",
-            text: "⚠️ AppsFlyer SDK not detected in logs.\nPlease run the 'integrateAppsFlyerSdk' tool to set up the SDK connection.",
-          },
-        ],
-      };
-    }
-
-    const logs = logsText.split("\n");
-    const logText = logs.join("\n");
-
-    // Detect Deferred Deep Link
-    const isDeferred =
-      /is_deferred\s*[:=]\s*true/i.test(logText) ||
-      /deferred deep link/i.test(logText);
-
-    // Detect Direct Deep Link
-    const hasOnDeepLinkingSuccess = /onDeepLinking.*SUCCESS/i.test(logText);
-    const hasAfDp = /af_dp[=:\"]/i.test(logText);
-    const hasAfDeeplinkTrue = /af_deeplink\s*[:=]\s*true/i.test(logText);
-    const isDirect = (hasOnDeepLinkingSuccess || hasAfDp || hasAfDeeplinkTrue) && !isDeferred;
-
-    // Find all deep link entries in logs
-    const deeplinkLines = logs.filter((line: string) =>
-      /deep_link_value|af_dp|onDeepLinking/i.test(line)
-    );
-
-    // Find deep link errors
-    const deeplinkErrors = logs.filter((line: string) =>
-      /onDeepLinking.*FAILURE|error parsing|invalid|deep_link.*null/i.test(line)
-    );
-
-    // Build output
-    const results = [
-      isDeferred ? "📥 Deferred deep link detected." : "",
-      isDirect ? "⚡ Direct deep link detected." : "",
-      deeplinkLines.length > 0
-        ? `🔗 Found ${deeplinkLines.length} deep link entries:\n${deeplinkLines.join("\n")}`
-        : "❌ No deep links found in logs.",
-      deeplinkErrors.length > 0
-        ? `❗ Found ${deeplinkErrors.length} possible error(s):\n${deeplinkErrors.join("\n")}`
-        : "✅ No deep link errors detected.",
-    ].filter(Boolean);
-
-    return {
-      content: [
-        {
-          type: "text",
-          text: results.join("\n\n"),
-        },
-      ],
-    };
-  }
-);
-
-
+  
 server.registerTool(
   "VerifyAppsFlyerDeepLinkHandled",
   {
     title: "Verify AppsFlyer Deep Link Handled",
-    description: descriptions.VerifyAppsFlyerDeepLinkHandled,
+    description: "Check if a deep link was triggered and handled properly inside the app.",
     inputSchema: {},
     annotations: {
-      intent: intents.VerifyAppsFlyerDeepLinkHandled,
-      keywords: keywords.VerifyAppsFlyerDeepLinkHandled,
+      intent: "verify appsflyer deep link handled",
+      keywords: ["deep link", "appsFlyer", "handled", "navigation"],
     },
   },
   async () => {
-    if (logBuffer.length === 0) {
+    await startLogcatStream(); 
+    const logsText = logBuffer.join("\n");
+    if (!logsText || logsText.trim() === "") {
       return {
-        content: [{ type: "text", text: "⚠️ No logs available for analysis." }],
+        content: [{ type: "text", text: "⚠️ No logs found. Make sure logcat is streaming." }],
       };
     }
 
-    const logText = logBuffer.join("\n");
-
+    const logText = logsText;
     const hasActivity = /Starting activity/.test(logText);
     const hasRouting = /navigate|redirect|route to/.test(logText.toLowerCase());
     const hasSpecificDeeplinkValue = /apples|deep_link_value/.test(logText);
 
     const allFound = hasActivity && hasRouting && hasSpecificDeeplinkValue;
 
+    const summary = allFound
+      ? "✅ Deep link seems to have triggered in-app flow (activity start + routing + value found)."
+      : [
+          "❌ Deep link may not have triggered the app flow.",
+          `• Found activity start: ${hasActivity}`,
+          `• Found routing/navigation: ${hasRouting}`,
+          `• Found deep link value: ${hasSpecificDeeplinkValue}`,
+        ].join("\n");
+
+   
+    const deepLinkReport = detectAppsFlyerDeepLink(logText);
+
     return {
       content: [
         {
           type: "text",
-          text: allFound
-            ? "✅ Deep link seems to have triggered in-app flow (activity start + routing + value found)."
-            : `❌ Deep link may not have triggered the app flow.\n- Found activity: ${hasActivity}\n- Found routing: ${hasRouting}\n- Found value: ${hasSpecificDeeplinkValue}`,
+          text: [summary, "", ...deepLinkReport].join("\n\n"),
         },
       ],
     };
   }
 );
+
+function detectAppsFlyerDeepLink(logsText: string): string[] {
+  const logs = logsText.split("\n");
+  const logText = logs.join("\n");
+
+  const isDeferred =
+    /is_deferred\s*[:=]\s*true/i.test(logText) ||
+    /deferred deep link/i.test(logText);
+
+  const hasOnDeepLinkingSuccess = /onDeepLinking.*SUCCESS/i.test(logText);
+  const hasAfDp = /af_dp[=:\"]/i.test(logText);
+  const hasAfDeeplinkTrue = /af_deeplink\s*[:=]\s*true/i.test(logText);
+  const isDirect = (hasOnDeepLinkingSuccess || hasAfDp || hasAfDeeplinkTrue) && !isDeferred;
+
+  const deeplinkLines = logs.filter((line: string) =>
+    /deep_link_value|af_dp|onDeepLinking/i.test(line)
+  );
+
+  const deeplinkErrors = logs.filter((line: string) =>
+    /onDeepLinking.*FAILURE|error parsing|invalid|deep_link.*null/i.test(line)
+  );
+
+  return [
+    "🔍 **Deep Link Detection Report:**",
+    isDeferred ? "📥 Deferred deep link detected." : "",
+    isDirect ? "⚡ Direct deep link detected." : "",
+    deeplinkLines.length > 0
+      ? `🔗 Found ${deeplinkLines.length} deep link entries:\n${deeplinkLines.join("\n")}`
+      : "❌ No deep links found in logs.",
+    deeplinkErrors.length > 0
+      ? `❗ Found ${deeplinkErrors.length} possible error(s):\n${deeplinkErrors.join("\n")}`
+      : "✅ No deep link errors detected.",
+  ].filter(Boolean);
+}
 
 async function startServer() {
   try {

@@ -38,72 +38,15 @@ export function getParsedAppsflyerFilters(keyword?: string): ParsedLog[] {
     })
     .filter(Boolean) as ParsedLog[];
 }
-
-export type DeepLinkSource = "UDL" | "DDL";
-
-export type DeepLinkInfo = {
-  found: boolean;
-  source: DeepLinkSource | null;
-  isDeferred: boolean;
-  status: string | null;
-  deepLinkValue: string | null;
-  referrerId: string | null;
-  error: string | null;
-};
-
-export function extractAppsflyerDeeplinkInfo(logs: string[]): DeepLinkInfo {
-  const result: DeepLinkInfo = {
-    found: false,
-    source: null,
-    isDeferred: false,
-    status: null,
-    deepLinkValue: null,
-    referrerId: null,
-    error: null,
-  };
-
-  for (const line of logs) {
-    if (line.includes("Calling onDeepLinking with:")) {
-      result.source = "UDL";
-      result.found = true;
-      const jsonMatch = line.match(/\{.*\}$/);
-      if (jsonMatch) {
-        try {
-          const outer = JSON.parse(jsonMatch[0]);
-          const inner = JSON.parse(outer.deepLink);
-          result.status = outer.status ?? null;
-          result.isDeferred = !!inner.is_deferred;
-          result.deepLinkValue = inner.deep_link_value ?? null;
-          result.referrerId = inner.deep_link_sub1 ?? null;
-        } catch (err) {
-          result.error = "Failed to parse deepLink JSON";
-        }
-      }
-    }
-
-    if (line.includes("Conversion attribute:")) {
-      result.source = "DDL";
-      result.found = true;
-      if (line.includes("deep_link_value")) {
-        result.deepLinkValue = extractValue(line);
-      }
-      if (line.includes("fruit_name") && !result.deepLinkValue) {
-        result.deepLinkValue = extractValue(line);
-      }
-      if (line.includes("deep_link_sub1")) {
-        result.referrerId = extractValue(line);
-      }
-    }
-  }
-
-  if (result.found && !result.source) {
-    result.source = "DDL";
-  }
-
-  return result;
+export function replaceOneLinkPlaceholders(stepsArray: string[], oneLinkUrl: string): string[] {
+  const urlObj = new URL(oneLinkUrl);
+  return stepsArray.map(step =>
+    step
+      .replace(/https:\/\/onelink-basic-app\.onelink\.me\/H5hv\/apples/g, oneLinkUrl)
+      .replace(/onelink-basic-app\.onelink\.me/g, urlObj.host)
+      .replace(/\/H5hv\/apples/g, urlObj.pathname)
+      .replace(/he.wikipedia.org/g, urlObj.hostname)
+  );
 }
 
-function extractValue(line: string): string | null {
-  const match = line.match(/[:=] (.+)$/);
-  return match ? match[1].trim() : null;
-}
+

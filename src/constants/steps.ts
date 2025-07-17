@@ -133,138 +133,136 @@ AppsFlyerLib.getInstance().logEvent(getApplicationContext(), <<Event name>>, eve
         ]),
   ],
   AppsFlyerOneLinkDeepLinkSetupPrompt: [
-      `✅ Guide to integrate Deep Linking with AppsFlyer OneLink (example URL: https://onelink-basic-app.onelink.me/H5hv/apples)`,
-    
-      `**1. Update AndroidManifest.xml**
-    
-    Add this intent-filter to your MainActivity:`,
-    
-      `\`\`\`xml
-    <activity
-      android:name=".MainActivity"
-      android:exported="true"
-      android:launchMode="singleTask">
-      <intent-filter android:autoVerify="true">
-        <action android:name="android.intent.action.VIEW" />
-        <category android:name="android.intent.category.DEFAULT" />
-        <category android:name="android.intent.category.BROWSABLE" />
-        <data
-          android:scheme="https"
-          android:host="onelink-basic-app.onelink.me"
-          android:pathPrefix="/H5hv/apples" />
-      </intent-filter>
-    </activity>
-    \`\`\``,
-    
-      `**2. Initialize AppsFlyer SDK**
-    
-    Initialize the SDK early in your app (e.g., in Application.onCreate or MainActivity.onCreate):`,
-    
-      `\`\`\`java
-    AppsFlyerLib.getInstance().setOneLinkCustomDomain("he.wikipedia.org"); // Replace with your domain
-    AppsFlyerLib.getInstance().start(getApplicationContext(), "YOUR_APPSFLYER_DEV_KEY");
-    \`\`\``,
-    
-      `**3. Handle Deep Link Intent in MainActivity**
-    
-    Process the Intent containing the deep link URI:`,
-    
-      `\`\`\`java
-    @Override
-    protected void onNewIntent(Intent intent) {
-      super.onNewIntent(intent);
-      Uri data = intent.getData();
-      if (data != null) {
-        String path = data.getPath();
-        if ("/H5hv/apples".equals(path)) {
-          // Add your custom logic here
-        }
+    `✅ Guide to integrate Deep Linking with AppsFlyer OneLink (example URL: https://onelink-basic-app.onelink.me/H5hv/apples)`,
+  
+    `**1. Update AndroidManifest.xml**`,
+  
+    `\`\`\`xml
+  <activity
+    android:name=".MainActivity"
+    android:exported="true"
+    android:launchMode="singleTask">
+    <intent-filter android:autoVerify="true">
+      <action android:name="android.intent.action.VIEW" />
+      <category android:name="android.intent.category.DEFAULT" />
+      <category android:name="android.intent.category.BROWSABLE" />
+      <data
+        android:scheme="https"
+        android:host="onelink-basic-app.onelink.me"
+        android:pathPrefix="/H5hv/apples" />
+    </intent-filter>
+  </activity>
+  \`\`\``,
+  
+    `**2. Initialize AppsFlyer SDK**`,
+  
+    `Initialize the SDK early in your app (e.g., in Application.onCreate or MainActivity.onCreate):`,
+  
+    `\`\`\`java
+  AppsFlyerLib.getInstance().setOneLinkCustomDomain("he.wikipedia.org"); // Replace with your domain
+  AppsFlyerLib.getInstance().start(getApplicationContext(), "YOUR_APPSFLYER_DEV_KEY");
+  \`\`\``,
+  
+    `**3. Handle Deep Link Intent in MainActivity**`,
+  
+    `Process the Intent containing the deep link URI:`,
+  
+    `\`\`\`java
+  @Override
+  protected void onNewIntent(Intent intent) {
+    super.onNewIntent(intent);
+    Uri data = intent.getData();
+    if (data != null) {
+      String path = data.getPath();
+      if ("/H5hv/apples".equals(path)) {
+        // Add your custom logic here
       }
     }
-    \`\`\``,
-    
-      `**4. Testing**
-    
-    - Use adb to test the deep link:`,
-    
-      `\`\`\`bash
-    adb shell am start -a android.intent.action.VIEW -d "https://onelink-basic-app.onelink.me/H5hv/apples" your.package.name
-    \`\`\``,
-    
-      `- Or test via AppsFlyer OneLink test links from the dashboard.`,
-    
-      `**5. (Optional) Upload assetlinks.json**
-    
-    Upload the file here to enable App Links verification:`,
-    
-      `\`\`\`
-    https://onelink-basic-app.onelink.me/.well-known/assetlinks.json
-    \`\`\``,
-    
-      `**6. Imports for Deep Linking**`,
-    
-      `\`\`\`java
-    import com.appsflyer.deeplink.DeepLink;
-    import com.appsflyer.deeplink.DeepLinkListener;
-    import com.appsflyer.deeplink.DeepLinkResult;
-    \`\`\``,
-    
-      `**7. Subscribe to DeepLinkListener**`,
-    
-      `\`\`\`java
-    AppsFlyerLib.getInstance().subscribeForDeepLink(new DeepLinkListener() {
-      @Override
-      public void onDeepLinking(@NonNull DeepLinkResult deepLinkResult) {
-        // TODO - handle the deep link result here
+  }
+  \`\`\``,
+  
+    `**4. Testing**`,
+  
+    `- Use adb to test the deep link:`,
+  
+    `\`\`\`bash
+  adb shell am start -a android.intent.action.VIEW -d "https://onelink-basic-app.onelink.me/H5hv/apples" your.package.name
+  \`\`\``,
+  
+    `- Or test via AppsFlyer OneLink test links from the dashboard.`,
+  
+    `**5. (Optional) Upload assetlinks.json**`,
+  
+    `Upload the file here to enable App Links verification:`,
+  
+    `\`\`\`
+  https://onelink-basic-app.onelink.me/.well-known/assetlinks.json
+  \`\`\``,
+  
+    `**6. Imports for Deep Linking**`,
+  
+    `\`\`\`java
+  import com.appsflyer.deeplink.DeepLink;
+  import com.appsflyer.deeplink.DeepLinkListener;
+  import com.appsflyer.deeplink.DeepLinkResult;
+  \`\`\``,
+  
+    `**7. Subscribe to DeepLinkListener**`,
+  
+    `\`\`\`java
+  AppsFlyerLib.getInstance().subscribeForDeepLink(new DeepLinkListener() {
+    @Override
+    public void onDeepLinking(@NonNull DeepLinkResult deepLinkResult) {
+      // TODO - handle the deep link result here
+    }
+  });
+  \`\`\``,
+  
+    `**8. Handle Deep Link Listener Logic**`,
+  
+    `\`\`\`java
+  AppsFlyerLib.getInstance().subscribeForDeepLink(new DeepLinkListener() {
+    @Override
+    public void onDeepLinking(@NonNull DeepLinkResult deepLinkResult) {
+      DeepLinkResult.Status dlStatus = deepLinkResult.getStatus();
+      if (dlStatus == DeepLinkResult.Status.NOT_FOUND) {
+        Log.d(LOG_TAG, "Deep link not found");
+        return;
+      } else if (dlStatus == DeepLinkResult.Status.ERROR) {
+        DeepLinkResult.Error dlError = deepLinkResult.getError();
+        Log.d(LOG_TAG, "Error getting Deep Link data: " + dlError.toString());
+        return;
+      } else {
+        Log.d(LOG_TAG, "Deep link found");
       }
-    });
-    \`\`\``,
-    
-      `**8. Handle Deep Link Listener Logic**`,
-    
-      `\`\`\`java
-    AppsFlyerLib.getInstance().subscribeForDeepLink(new DeepLinkListener() {
-      @Override
-      public void onDeepLinking(@NonNull DeepLinkResult deepLinkResult) {
-        DeepLinkResult.Status dlStatus = deepLinkResult.getStatus();
-        if (dlStatus == DeepLinkResult.Status.NOT_FOUND) {
-          Log.d(LOG_TAG, "Deep link not found");
-          return;
-        } else if (dlStatus == DeepLinkResult.Status.ERROR) {
-          DeepLinkResult.Error dlError = deepLinkResult.getError();
-          Log.d(LOG_TAG, "Error getting Deep Link data: " + dlError.toString());
-          return;
+      DeepLink deepLinkObj = deepLinkResult.getDeepLink();
+      try {
+        Log.d(LOG_TAG, "DeepLink data: " + deepLinkObj.toString());
+        String deepLinkDestination = deepLinkObj.getDeepLinkValue();
+        if (deepLinkObj.isDeferred()) {
+          Log.d(LOG_TAG, "Deferred deep link flow");
+          // Handle deferred deep link
         } else {
-          Log.d(LOG_TAG, "Deep link found");
+          Log.d(LOG_TAG, "Direct deep link flow");
+          // Handle direct deep link
         }
-        DeepLink deepLinkObj = deepLinkResult.getDeepLink();
-        try {
-          Log.d(LOG_TAG, "DeepLink data: " + deepLinkObj.toString());
-          String deepLinkDestination = deepLinkObj.getDeepLinkValue();
-          if (deepLinkObj.isDeferred()) {
-            Log.d(LOG_TAG, "Deferred deep link flow");
-            // Handle deferred deep link
-          } else {
-            Log.d(LOG_TAG, "Direct deep link flow");
-            // Handle direct deep link
-          }
-          // Navigate or handle destination here
-        } catch (Exception e) {
-          Log.d(LOG_TAG, "DeepLink data was null");
-        }
+        // Navigate or handle destination here
+      } catch (Exception e) {
+        Log.d(LOG_TAG, "DeepLink data was null");
       }
-    });
-    \`\`\``,
-    
-      `**9. Summary Notes**`,
-    
-      `- Use \`singleTask\` or \`singleTop\` for launchMode.
-    - Make sure scheme/host in manifest and OneLink match.
-    - For App Links, verify assetlinks.json is hosted.
-    - For URI schemes (e.g. \`myapp://\`), use a dedicated intent-filter.
-    - Replace \`YOUR_APPSFLYER_DEV_KEY\` with your actual key.`,
-    
-      `🎯 Ready to integrate and test deep linking!`,
-    ],
-    
+    }
+  });
+  \`\`\``,
+  
+    `**9. Summary Notes**`,
+  
+    `- Use \`singleTask\` or \`singleTop\` for launchMode.
+  - Make sure scheme/host in manifest and OneLink match.
+  - For App Links, verify assetlinks.json is hosted.
+  - For URI schemes (e.g. \`myapp://\`), use a dedicated intent-filter.
+  - Replace \`YOUR_APPSFLYER_DEV_KEY\` with your actual key.`,
+  
+    `🎯 Ready to integrate and test deep linking!`,
+  ],
 };
+  
