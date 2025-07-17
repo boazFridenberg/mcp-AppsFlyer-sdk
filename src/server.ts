@@ -575,6 +575,7 @@ server.registerTool(
     inputSchema: {
       oneLinkUrl: z.string().url(),
       uriScheme: z.string().optional(),
+      isDirect: z.boolean().optional(),
     },
     annotations: {
       intent: intents.AppsFlyerOneLinkDeepLinkSetupPrompt,
