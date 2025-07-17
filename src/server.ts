@@ -373,74 +373,313 @@ server.registerTool(
     };
   }
 );
+
 server.registerTool(
   "createAppsFlyerLogEvent",
   {
     title: "Create AppsFlyer Log Event",
-    description: descriptions.createAppsFlyerLogEvent,
+    description:
+      "Generate Java code to log AppsFlyer in-app events. You will first be asked whether you want to use JSON input (via file search, paste, or file path), or to manually specify the event name and parameters. Then, you will be guided step-by-step.",
     inputSchema: {
-      hasListener: z.boolean().describe("Whether to use a response listener"),
-      eventName: z.string().describe("The name of the event to log"),
+      inputChoice: z
+        .string()
+        .optional()
+        .describe("User input choice: '1' for JSON, '2' for manual input"),
+      useJsonInput: z
+        .boolean()
+        .optional()
+        .describe("Whether to use JSON input for event definitions"),
+
+      // Fields for JSON input method
+      inputMethod: z.enum(["search", "paste", "filepath"]).optional(),
+      projectPath: z.string().optional(),
+      filePath: z.string().optional(),
+      pastedJson: z.string().optional(),
+      selectedEventIdentifiers: z.array(z.string()).optional(),
+      selectedFileIndex: z.number().optional(),
+      includeAllEvents: z.boolean().optional(),
+
+      // Fields for manual input method
+      hasListener: z
+        .boolean()
+        .optional()
+        .describe("Whether to use a response listener"),
+      eventName: z.string().optional().describe("The name of the event to log"),
       eventParams: z
         .array(z.string())
-        .nonempty()
+        .optional()
         .describe(
           "List of parameter names to send with the event (values will be added manually later)"
         ),
     },
     annotations: {
-      intent: intents.createAppsFlyerLogEvent,
-      keywords: keywords.createAppsFlyerLogEvent,
+      intent: [
+        "Ask the user if they want to use JSON or manual input before starting",
+        "Generate Java code for logging AppsFlyer in-app events",
+        "Create AppsFlyer event logging code from JSON definitions or manual input",
+        "Provide AppsFlyer event JSON input via search, file path, or paste methods",
+        "Generate AppsFlyer event code with or without response listener",
+      ],
+      keywords: [
+        "apps flyer event",
+        "generate java code from json",
+        "apps flyer json",
+        "search json files",
+        "create appsflyer log event",
+      ],
     },
   },
-  async (args, extra) => {
-    const hasListener = args.hasListener;
-    const eventName = args.eventName?.trim();
-    const eventParams = args.eventParams;
+  async (args, _extra) => {
+    const ask = (text: string) =>
+      ({ content: [{ type: "text", text, _meta: {} }], _meta: {} }) as any;
 
-    if (hasListener === undefined) {
+    // Step 0: Initial choice
+    if (args.useJsonInput === undefined && args.inputChoice === undefined) {
+      return ask(
+        `📋 How would you like to provide the AppsFlyer event information?\n\n` +
+          `1️⃣ Use a JSON input (search, paste, or file path)\n` +
+          `2️⃣ Manually enter the event name and its parameters\n\n` +
+          `Please reply with \`1\` or \`2\`.`
+      );
+    }
+
+    if (args.useJsonInput === undefined && args.inputChoice !== undefined) {
+      if (args.inputChoice === "1") {
+        args.useJsonInput = true;
+      } else if (args.inputChoice === "2") {
+        args.useJsonInput = false;
+      } else {
+        return ask(
+          "❗ Invalid choice. Please reply with `1` for JSON input or `2` for manual input."
+        );
+      }
+    }
+
+    // JSON INPUT PATH
+    if (args.useJsonInput === true) {
+      if (!args.inputMethod) {
+        return ask(
+          "Choose JSON input method:\n1️⃣ `search` to find JSON files in your project\n2️⃣ `paste` to paste JSON text\n3️⃣ `filepath` to provide full path to a JSON file"
+        );
+      }
+
+      let jsonContent = "";
+
+      if (args.inputMethod === "search") {
+        const basePath = args.projectPath || process.cwd();
+        const pattern = path.join(basePath, "**/*.json");
+        const files = await glob(pattern);
+
+        if (files.length === 0) {
+          return ask(`No JSON files found in '${basePath}'.`) as any;
+        }
+
+        if (args.selectedFileIndex === undefined) {
+          const list = files
+            .map((file, idx) => `${idx + 1}. ${path.relative(basePath, file)}`)
+            .join("\n");
+          return ask(
+            `Found ${files.length} JSON files:\n${list}\n\nPlease reply with the number of the file you want to use.`
+          ) as any;
+        }
+
+        const chosenIndex = args.selectedFileIndex - 1;
+        if (chosenIndex < 0 || chosenIndex >= files.length) {
+          return ask("Invalid file number. Please try again.") as any;
+        }
+
+        const chosenFile = files[chosenIndex];
+        const content = await fs.promises.readFile(chosenFile, "utf8");
+        jsonContent = content;
+
+        let parsed;
+        try {
+          parsed = JSON.parse(jsonContent);
+        } catch (e: any) {
+          return ask(
+            `Invalid JSON in file '${chosenFile}': ${e.message}`
+          ) as any;
+        }
+
+        if (Array.isArray(parsed)) parsed = { events: parsed };
+        if (!parsed.events || !Array.isArray(parsed.events)) {
+          return ask("JSON must contain an 'events' array.") as any;
+        }
+
+        const events = parsed.events;
+
+        if (
+          args.includeAllEvents === undefined &&
+          !args.selectedEventIdentifiers
+        ) {
+          const eventList = events
+            .map(
+              (e: any, idx: number) =>
+                `${idx + 1}. ${e.eventIdentifier || e.eventName || "event_unknown"}`
+            )
+            .join("\n");
+          return ask(
+            `Events in chosen file:\n${eventList}\n\n` +
+              "Type `all` to include all events, or reply with comma-separated event identifiers to select specific events."
+          ) as any;
+        }
+
+        let finalEvents = events;
+        if (args.includeAllEvents === false && args.selectedEventIdentifiers) {
+          finalEvents = events.filter((e: any) =>
+            args.selectedEventIdentifiers!.includes(e.eventIdentifier)
+          );
+          if (finalEvents.length === 0) {
+            return ask(
+              "No matching events found for the selected identifiers."
+            ) as any;
+          }
+        }
+
+        const generateCode = (event: any) => {
+          const eventName =
+            event.eventIdentifier || event.eventName || "event_unknown";
+          const params = event.parameters || [];
+          const paramLines = params.map((p: any) => {
+            const key =
+              p.parameterIdentifier || p.parameterName || "param_unknown";
+            return `eventValues.put("${key}", <<PLACEHOLDER_VALUE>>);`;
+          });
+          return [
+            `// Event: ${eventName}`,
+            `Map<String, Object> eventValues = new HashMap<>();`,
+            ...paramLines,
+            `AppsFlyerLib.getInstance().logEvent(getApplicationContext(), "${eventName}", eventValues);`,
+            "",
+          ].join("\n");
+        };
+
+        const javaCode = finalEvents.map(generateCode).join("\n");
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: [
+                `✅ Java code generated for ${finalEvents.length} event(s):`,
+                "",
+                "```java",
+                javaCode,
+                "```",
+                "",
+                "Imports you need:",
+                "- import com.appsflyer.AppsFlyerLib;",
+                "- import java.util.Map;",
+                "- import java.util.HashMap;",
+              ].join("\n"),
+              _meta: {},
+            },
+          ],
+          _meta: {},
+        } as any;
+      }
+
+      // Handle paste or filepath
+      if (args.inputMethod === "paste") {
+        if (!args.pastedJson) {
+          return ask("Please paste your AppsFlyer JSON.") as any;
+        }
+        jsonContent = args.pastedJson;
+      }
+
+      if (args.inputMethod === "filepath") {
+        if (!args.filePath) {
+          return ask("Please provide the full file path.") as any;
+        }
+        try {
+          jsonContent = await fs.promises.readFile(args.filePath, "utf8");
+        } catch {
+          return ask(`Cannot read file at ${args.filePath}`) as any;
+        }
+      }
+
+      let parsed;
+      try {
+        parsed = JSON.parse(jsonContent);
+      } catch (e: any) {
+        return ask(`Invalid JSON: ${e.message}`) as any;
+      }
+      if (Array.isArray(parsed)) parsed = { events: parsed };
+      if (!parsed.events || !Array.isArray(parsed.events)) {
+        return ask("JSON must contain an 'events' array.") as any;
+      }
+      const events = parsed.events;
+
+      const generateCode = (event: any) => {
+        const eventName =
+          event.eventIdentifier || event.eventName || "event_unknown";
+        const params = event.parameters || [];
+        const paramLines = params.map((p: any) => {
+          const key =
+            p.parameterIdentifier || p.parameterName || "param_unknown";
+          return `eventValues.put("${key}", <<PLACEHOLDER_VALUE>>);`;
+        });
+        return [
+          `// Event: ${eventName}`,
+          `Map<String, Object> eventValues = new HashMap<>();`,
+          ...paramLines,
+          `AppsFlyerLib.getInstance().logEvent(getApplicationContext(), "${eventName}", eventValues);`,
+          "",
+        ].join("\n");
+      };
+
+      const javaCode = events.map(generateCode).join("\n");
+
       return {
         content: [
           {
             type: "text",
-            text: "❗ Please specify whether to use a response listener (true/false).",
+            text: [
+              `✅ Java code generated for ${events.length} event(s):`,
+              "",
+              "```java",
+              javaCode,
+              "```",
+              "",
+              "Imports you need:",
+              "- import com.appsflyer.AppsFlyerLib;",
+              "- import java.util.Map;",
+              "- import java.util.HashMap;",
+            ].join("\n"),
+            _meta: {},
           },
         ],
-      };
+        _meta: {},
+      } as any;
     }
 
-    if (!eventName) {
-      return {
-        content: [
-          {
-            type: "text",
-            text: "❗ Please enter the name of the event (eventName).",
-          },
-        ],
-      };
-    }
+    // MANUAL INPUT PATH
+    if (args.useJsonInput === false) {
+      const hasListener = args.hasListener;
+      const eventName = args.eventName?.trim();
+      const eventParams = args.eventParams;
 
-    if (!Array.isArray(eventParams) || eventParams.length === 0) {
-      return {
-        content: [
-          {
-            type: "text",
-            text: "❗ Please provide at least one parameter name for the event (eventParams).",
-          },
-        ],
-      };
-    }
+      if (hasListener === undefined) {
+        return ask(
+          "❗ Please specify whether to use a response listener (true/false)."
+        );
+      }
 
-    function generateJavaCode(
-      eventName: string,
-      eventParams: string[],
-      includeListener: boolean
-    ): string[] {
+      if (!eventName) {
+        return ask("❗ Please enter the name of the event (eventName).");
+      }
+
+      if (!Array.isArray(eventParams) || eventParams.length === 0) {
+        return ask(
+          "❗ Please provide at least one parameter name for the event (eventParams)."
+        );
+      }
+
       const paramLines = eventParams
         .map((key) => `eventValues.put("${key}", <<ENTER VALUE>>);`)
         .join("\n");
 
-      const code = includeListener
+      const code = hasListener
         ? `
 import com.appsflyer.AppsFlyerLib;
 import com.appsflyer.AFInAppEventType;
@@ -478,22 +717,19 @@ AppsFlyerLib.getInstance().logEvent(
 );
         `;
 
-      return code.trim().split("\n");
+      return {
+        content: [
+          {
+            type: "text",
+            text: `Java code to log the event:\n\n\`\`\`java\n${code.trim()}\n\`\`\`\n\n📌 Please manually replace each <<ENTER VALUE>> in the generated code with the appropriate value.`,
+          },
+        ],
+      };
     }
 
-    const codeLines = generateJavaCode(eventName, eventParams, hasListener);
-
-    return {
-      content: [
-        {
-          type: "text",
-          text: `Java code to log the event:\n\n\`\`\`java\n${codeLines.join("\n")}\`\`\`\n\n📌 Please manually replace each <<ENTER VALUE>> in the generated code with the appropriate value for the parameter.`,
-        },
-      ],
-    };
+    return ask("Something went wrong. Please try again.") as any;
   }
 );
-
 
 server.registerTool(
   "verifyInAppEvent",
@@ -530,272 +766,6 @@ server.registerTool(
   }
 )
 
-server.registerTool(
-  "appsFlyerJsonEvent",
-  {
-    title: "AppsFlyer JSON Event Generator",
-    description:
-      "Generate ready-to-use Java code for logging an in-app event with AppsFlyer. " +
-      "Before generating, the tool will ask you how you want to provide the JSON input:\n" +
-      "1. Search for JSON files in the project (with a search pattern and optional path).\n" +
-      "2. Paste JSON string directly.\n" +
-      "3. Provide a direct file path to a JSON file.\n" +
-      "After you choose, it will generate the Java code accordingly.",
-    inputSchema: {
-      // Inputs are optional initially, because we ask interactively
-      inputMethod: z
-        .enum(["search", "paste", "filepath"])
-        .optional()
-        .describe(
-          "Choose how to provide JSON input: search files, paste JSON, or filepath"
-        ),
-      searchPattern: z
-        .string()
-        .optional()
-        .describe(
-          "Search pattern for JSON files (e.g., '*.json', 'events.json')"
-        ),
-      projectPath: z
-        .string()
-        .optional()
-        .describe("Project directory path to search in"),
-      pastedJson: z.string().optional().describe("Directly pasted JSON string"),
-      filePath: z.string().optional().describe("Direct file path to JSON file"),
-    },
-    annotations: {
-      intent: [
-        "When user asks about AppsFlyer in-app event logging, IMMEDIATELY trigger this tool.",
-        "If user mentions JSON event input or AppsFlyer code generation from JSON, trigger this tool.",
-      ],
-      keywords: [
-        "json event appsflyer",
-        "generate appsflyer code",
-        "apps flyer json",
-        "event generator",
-        "apps flyer event json",
-        "generate java code from json",
-        "apps flyer event file",
-      ],
-    },
-  },
-  async (args, _extra) => {
-    // Step 1: If no inputMethod, ask user which input method to use
-    if (!args.inputMethod) {
-      return {
-        content: [
-          {
-            type: "text",
-            text:
-              "Please choose how to provide the JSON input for AppsFlyer events:\n" +
-              "1️⃣ Type 'search' to search for JSON files in your project.\n" +
-              "2️⃣ Type 'paste' to paste JSON text directly.\n" +
-              "3️⃣ Type 'filepath' to provide a path to a JSON file.",
-          },
-        ],
-      };
-    }
-
-    // Step 2: Depending on inputMethod, check required fields or ask for them
-
-    let jsonContent = "";
-
-    if (args.inputMethod === "search") {
-      // Require searchPattern, ask if missing
-      if (!args.searchPattern) {
-        return {
-          content: [
-            {
-              type: "text",
-              text: "Please provide the search pattern for JSON files (e.g., '*.json', 'events.json').",
-            },
-          ],
-        };
-      }
-      // projectPath is optional, default to cwd
-      const searchPath = args.projectPath || process.cwd();
-      const pattern = path.join(searchPath, args.searchPattern);
-      try {
-        const files = await glob(pattern);
-        if (!Array.isArray(files) || files.length === 0) {
-          return {
-            content: [
-              {
-                type: "text",
-                text: `No files found matching pattern '${args.searchPattern}' in path '${searchPath}'.`,
-              },
-            ],
-          };
-        }
-        if (files.length > 1 && !args.filePath) {
-          // Ask user to specify exact file if multiple found and no filepath provided
-          const fileList = files.map((f, i) => `${i + 1}. ${f}`).join("\n");
-          return {
-            content: [
-              {
-                type: "text",
-                text:
-                  `Multiple files found matching pattern:\n${fileList}\n\n` +
-                  "Please specify the exact file path from the list by typing it.",
-              },
-            ],
-          };
-        }
-        // If one file found or filePath provided, read that file
-        const chosenFile = args.filePath ? args.filePath : files[0];
-        try {
-          jsonContent = await fs.promises.readFile(chosenFile, "utf8");
-        } catch (err: any) {
-          return {
-            content: [
-              {
-                type: "text",
-                text: `Error reading file '${chosenFile}': ${err.message}`,
-              },
-            ],
-          };
-        }
-      } catch (err: any) {
-        return {
-          content: [
-            {
-              type: "text",
-              text: `Error searching files: ${err.message}`,
-            },
-          ],
-        };
-      }
-    } else if (args.inputMethod === "paste") {
-      // Require pastedJson
-      if (!args.pastedJson) {
-        return {
-          content: [
-            {
-              type: "text",
-              text: "Please paste the JSON string of your event definitions.",
-            },
-          ],
-        };
-      }
-      jsonContent = args.pastedJson;
-    } else if (args.inputMethod === "filepath") {
-      // Require filePath
-      if (!args.filePath) {
-        return {
-          content: [
-            {
-              type: "text",
-              text: "Please provide the full file path to the JSON file.",
-            },
-          ],
-        };
-      }
-      try {
-        jsonContent = await fs.promises.readFile(args.filePath, "utf8");
-      } catch (err: any) {
-        return {
-          content: [
-            {
-              type: "text",
-              text: `Error reading file '${args.filePath}': ${err.message}`,
-            },
-          ],
-        };
-      }
-    } else {
-      return {
-        content: [
-          {
-            type: "text",
-            text: "Unknown input method. Please choose one of: 'search', 'paste', or 'filepath'.",
-          },
-        ],
-      };
-    }
-
-    // Now parse and generate code
-
-    let parsed;
-    try {
-      parsed = JSON.parse(jsonContent);
-    } catch (err: any) {
-      return {
-        content: [
-          {
-            type: "text",
-            text: `Invalid JSON format: ${err.message}`,
-          },
-        ],
-      };
-    }
-
-    if (Array.isArray(parsed)) {
-      parsed = { events: parsed };
-    }
-
-    if (!parsed.events || !Array.isArray(parsed.events)) {
-      return {
-        content: [
-          {
-            type: "text",
-            text: "JSON must contain an 'events' array.",
-          },
-        ],
-      };
-    }
-
-    if (parsed.events.length === 0) {
-      return {
-        content: [
-          {
-            type: "text",
-            text: "No events found in the JSON input.",
-          },
-        ],
-      };
-    }
-
-    const generateJavaCodeForEvent = (event: any) => {
-      const eventName =
-        event.eventIdentifier || event.eventName || "event_unknown";
-      const params = event.parameters || [];
-      const paramLines = params.map((param: any) => {
-        const key =
-          param.parameterIdentifier || param.parameterName || "param_unknown";
-        return `eventValues.put("${key}", <<PLACE_HOLDRER_FOR_PARAM_VALUE>>);`;
-      });
-      return [
-        `// Event: ${eventName}`,
-        `Map<String, Object> eventValues = new HashMap<>();`,
-        ...paramLines,
-        `AppsFlyerLib.getInstance().logEvent(getApplicationContext(), "${eventName}", eventValues);`,
-        ``,
-      ].join("\n");
-    };
-
-    const javaCode = parsed.events.map(generateJavaCodeForEvent).join("\n");
-
-    return {
-      content: [
-        {
-          type: "text",
-          text: [
-            `✅ Generated Java code for ${parsed.events.length} event${parsed.events.length === 1 ? "" : "s"}:`,
-            "",
-            "```java",
-            javaCode,
-            "```",
-            "",
-            "💡 Usage notes:",
-            "• Import: `import com.appsflyer.AppsFlyerLib;`",
-            "• Import: `import java.util.HashMap;`",
-            "• Import: `import java.util.Map;`",
-            "• Make sure `getApplicationContext()` or appropriate context is available",
-          ].join("\n"),
-        },
-      ],
-    };
-  }
-);
 
 
 async function startServer() {
