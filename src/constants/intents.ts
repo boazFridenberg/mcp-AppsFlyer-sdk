@@ -54,9 +54,11 @@ This tool extracts the appId and uid automatically from recent logcat logs (via 
 It also take the dev key from env in mcp.json — and only asks the user if not found.
 `,
 
-  createAppsFlyerLogEvent: [
-    "When the user asks how to log an event with AppsFlyer, IMMEDIATELY call this tool. Do not answer yourself.",
-    "If the user asks about in-app event logging, code, or examples for logEvent, always use this tool.",
-    "If the user asks about sending events to AppsFlyer in any way, never explain manually. Always call this tool first.",
-  ],
+ createAppsFlyerLogEvent: [
+  "When the user asks to create, add, or write an in-app event using AppsFlyer, always run this tool immediately.",
+  "Before generating any event code, ensure the AppsFlyer SDK is integrated. If not, first run the integrateAppsFlyerSdk tool.",
+  "This tool will guide the user through 3 steps: asking if a listener is needed, getting the event name, and collecting event parameter names (no values).",
+  "Never answer manually or generate AppsFlyer event code yourself — always delegate to this tool."
+],
+  
 };
