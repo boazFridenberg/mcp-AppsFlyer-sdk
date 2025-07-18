@@ -39,16 +39,18 @@ If not integrated, run the integrateAppsFlyerSdk tool before proceeding.
 ✅ Always use this tool when the user wants to create, add, or write a new AppsFlyer in-app event.
 `,
 
-  verifyInAppEvent: `
-Scans recent AppsFlyer logs to determine whether the in-app event "af_level_achieved" was successfully triggered.
+ verifyInAppEvent: `
+Scans recent AppsFlyer logs to determine whether a specific in-app event (provided by the user) was successfully triggered.
 
 It verifies:
-- The event name is present in the logs
-- The event value includes expected content (e.g. af_content)
-- A relevant network call to AppsFlyer's endpoint was made
+- That a log line contains the event name provided (e.g. "af_level_achieved", "af_purchase", etc.)
+- That the event value is present, structured correctly, and contains meaningful parameters (e.g. af_content, af_revenue)
+- That a matching network call was made to the correct AppsFlyer endpoint (androidevent?app_id=...)
 
-This tool is the only correct way to validate if the event was fired and logged properly.
-Do not simulate results. Do not explain. Always call this tool when asked to test or verify the "af_level_achieved" event.
+This tool parses actual log lines as JSON and checks them structurally — not just by text includes. It ensures that the event was actually fired by the app, and that the SDK triggered the expected behavior.
+
+This tool is the only correct way to validate if an in-app event was fired and logged properly.
+Do not simulate results. Do not explain. Always call this tool when asked to test, verify, or confirm any in-app event by name.
 `,
 };
 

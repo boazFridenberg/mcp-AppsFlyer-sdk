@@ -1,5 +1,5 @@
 import { spawn } from "child_process";
-import { getAdbPath, validateAdb, getConnectedDevices } from "../adb.js";
+import { getAdbPath, validateAdb, getConnectedDevices } from "./adb.js";
 
 const MAX_LOG_LINES = 700;
 export let logBuffer: string[] = [];
