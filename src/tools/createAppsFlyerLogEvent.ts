@@ -12,17 +12,11 @@ export function createAppsFlyerLogEvent(server: McpServer): void {
     "createAppsFlyerLogEvent",
     {
       title: "Create AppsFlyer Log Event",
-      description:
-        "Generate Java code to log AppsFlyer in-app events. You will first be asked whether you want to use JSON input (via file search, paste, or file path), or to manually specify the event name and parameters. Then, you will be guided step-by-step.",
+      description: descriptions.createAppsFlyerLogEvent,
       inputSchema: {
-        inputChoice: z
-          .string()
-          .optional()
-          .describe("User input choice: '1' for JSON, '2' for manual input"),
-        useJsonInput: z
-          .boolean()
-          .optional()
-          .describe("Whether to use JSON input for event definitions"),
+        inputChoice: z .string().optional().describe("User input choice: '1' for JSON, '2' for manual input"),
+        useJsonInput: z  .boolean().optional().describe("Whether to use JSON input for event definitions"),
+        
         // Fields for JSON input method
         inputMethod: z.enum(["search", "paste", "filepath"]).optional(),
         projectPath: z.string().optional(),
@@ -31,34 +25,17 @@ export function createAppsFlyerLogEvent(server: McpServer): void {
         selectedEventIdentifiers: z.array(z.string()).optional(),
         selectedFileIndex: z.number().optional(),
         includeAllEvents: z.boolean().optional(),
+
         // Fields for manual input method
-        hasListener: z
-          .boolean()
-          .optional()
-          .describe("Whether to use a response listener"),
+        hasListener: z.boolean().optional().describe("Whether to use a response listener"),
         eventName: z.string().optional().describe("The name of the event to log"),
-        eventParams: z
-          .array(z.string())
-          .optional()
-          .describe(
+        eventParams: z.array(z.string()).optional().describe(
             "List of parameter names to send with the event (values will be added manually later)"
           ),
       },
       annotations: {
-        intent: [
-          "Ask the user if they want to use JSON or manual input before starting",
-          "Generate Java code for logging AppsFlyer in-app events",
-          "Create AppsFlyer event logging code from JSON definitions or manual input",
-          "Provide AppsFlyer event JSON input via search, file path, or paste methods",
-          "Generate AppsFlyer event code with or without response listener",
-        ],
-        keywords: [
-          "apps flyer event",
-          "generate java code from json",
-          "apps flyer json",
-          "search json files",
-          "create appsflyer log event",
-        ],
+        intent: intents.createAppsFlyerLogEvent,
+        keywords: keywords.createAppsFlyerLogEvent,
       },
     },
     async (args, _extra) => {

@@ -66,17 +66,11 @@ export const keywords = {
       "is appsflyer working"
     ],
     createAppsFlyerLogEvent: [
-    "log event appsflyer",
-    "apps flyer logEvent",
-    "track event",
-    "apps flyer event tracking",
-    "apps flyer send event",
-    "in-app event code",
-    "generate logEvent",
-    "how to send event appsflyer",
-    "event listener appsflyer",
-    "apps flyer event code",
-    "track in-app"
+    "apps flyer event",
+    "generate java code from json",
+    "apps flyer json",
+    "search json files",
+    "create appsflyer log event",
   ],
 
   verifyInAppEvent: [
