@@ -12,7 +12,6 @@ import { steps } from "./constants/steps.js";
 import * as fs from "fs";
 import path from "path";
 import { glob } from "glob";
-import { exec } from "child_process";
 
 const server = new McpServer({
   name: "appsflyer-logcat-mcp-server",
@@ -432,7 +431,6 @@ server.registerTool(
   async (args, _extra) => {
     const ask = (text: string) =>
       ({ content: [{ type: "text", text, _meta: {} }], _meta: {} }) as any;
-
     // Step 0: Initial choice
     if (args.useJsonInput === undefined && args.inputChoice === undefined) {
       return ask(
