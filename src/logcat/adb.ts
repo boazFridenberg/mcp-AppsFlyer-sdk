@@ -1,89 +1,84 @@
-import { spawn } from "child_process";
+import * as os from "os";
+import * as path from "path";
+import * as fs from "fs";
+import { execFileSync } from "child_process";
 
 /**
- * Run adb logcat and collect lines.
+ * Returns absolute path to adb binary based on OS platform
  */
-export async function runAdbLogcat(
-  deviceId?: string,
-  filter?: string
-): Promise<string[]> {
-  return new Promise((resolve, reject) => {
-    const args = [];
-    if (deviceId) args.push("-s", deviceId);
-    args.push("logcat", "-v", "time");
+export function getAdbPath(): string {
+  const platform = os.platform();
+  const home = os.homedir();
 
-    if (filter) args.push(filter);
-
-    const adb = spawn("adb", args);
-    const lines: string[] = [];
-    let resolved = false;
-
-    adb.stdout.on("data", (data) => {
-      const text = data.toString();
-      lines.push(...text.split("\n").filter(Boolean));
-    });
-
-    adb.stderr.on("data", (data) => {
-      const errMsg = data.toString();
-      if (!resolved) {
-        resolved = true;
-        reject(new Error(`ADB error: ${errMsg}`));
-      }
-    });
-
-    adb.on("close", () => {
-      if (!resolved) {
-        resolved = true;
-        resolve(lines);
-      }
-    });
-
-    setTimeout(() => {
-      if (!resolved) {
-        resolved = true;
-        adb.kill("SIGINT");
-        resolve(lines);
-      }
-    }, 2000);
-  });
+  let adbPath;
+  if (platform === "win32") {
+    adbPath = path.join(
+      home,
+      "AppData",
+      "Local",
+      "Android",
+      "Sdk",
+      "platform-tools",
+      "adb.exe"
+    );
+  } else if (platform === "darwin") {
+    adbPath = path.join(
+      home,
+      "Library",
+      "Android",
+      "sdk",
+      "platform-tools",
+      "adb"
+    );
+  } else if (platform === "linux") {
+    adbPath = path.join(home, "Android", "Sdk", "platform-tools", "adb");
+  } else {
+    const msg = `[ADB] Unsupported OS platform for ADB: ${platform}`;
+    console.error(msg);
+    throw new Error(msg);
+  }
+  return adbPath;
 }
 
 /**
- * Extract PID from a logcat line.
+ * Validates adb binary existence and execution permission
  */
-export function extractPidFromLogLine(line: string): number | null {
-  const match = line.match(/\(\s*(\d+)\)/);
-  return match ? parseInt(match[1], 10) : null;
+export function validateAdb(adbPath: string): void {
+  const resolvedPath = fs.realpathSync(adbPath);
+
+  if (!fs.existsSync(resolvedPath)) {
+    const msg = `[ADB] ADB binary not found at: ${resolvedPath}`;
+    console.error(msg);
+    throw new Error(msg);
+  }
+  try {
+    fs.accessSync(resolvedPath, fs.constants.X_OK);
+  } catch {
+    const msg = `[ADB] ADB binary is not executable: ${resolvedPath}`;
+    console.error(msg);
+    throw new Error(msg);
+  }
 }
 
 /**
- * Filter logs to only include lines with given PID.
+ * Returns list of connected device IDs
  */
-export function filterLogsByPid(lines: string[], pid: number): string[] {
-  return lines.filter((line) => extractPidFromLogLine(line) === pid);
-}
-
-/**
- * Return list of connected ADB device IDs.
- */
-export async function getConnectedDeviceIds(): Promise<string[]> {
-  return new Promise((resolve, reject) => {
-    const adb = spawn("adb", ["devices"]);
-
-    const output: string[] = [];
-
-    adb.stdout.on("data", (data) => {
-      const lines = data.toString().split("\n");
-      for (const line of lines) {
-        const match = line.match(/^([^\s]+)\s+device$/);
-        if (match) output.push(match[1]);
-      }
-    });
-
-    adb.stderr.on("data", (data) => {
-      reject(new Error(`ADB error: ${data.toString()}`));
-    });
-
-    adb.on("close", () => resolve(output));
-  });
+export function getConnectedDevices(adbPath: string): string[] {
+  try {
+    const output = execFileSync(adbPath, ["devices"], { encoding: "utf8" });
+    const lines = output.split("\n").slice(1); // Skip the header line
+    const devices = lines
+      .map((line) => line.trim())
+      .filter(
+        (line) => line && line.includes("device") && !line.includes("offline")
+      )
+      .map((line) => line.split("\t")[0]);
+    return devices;
+  } catch (err: any) {
+    const msg = `[ADB] Failed to retrieve connected devices: ${
+      err.message || err
+    }`;
+    console.error(msg);
+    throw new Error(msg);
+  }
 }

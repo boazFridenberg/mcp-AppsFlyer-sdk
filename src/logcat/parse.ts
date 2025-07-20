@@ -1,43 +1,49 @@
-/**
- * Attempts to parse JSON embedded inside a log line (if any).
- * Assumes JSON object is at end of line or inside brackets.
- */
+import { logBuffer, startLogcatStream } from "./stream.js";
+
+export interface ParsedLog {
+  timestamp: string;
+  type: string;
+  json: Record<string, any>;
+}
+
 export function extractJsonFromLine(line: string): Record<string, any> | null {
-  const jsonMatch = line.match(/\{.*\}$/);
-  if (!jsonMatch) return null;
+  if (!line) return null;
+  const match = line.match(/{.*}/s);
+  if (!match) return null;
 
   try {
-    return JSON.parse(jsonMatch[0]);
+    return JSON.parse(match[0]);
   } catch {
     return null;
   }
 }
 
-/**
- * Returns logs with JSON filtered by keyword prefix in the log message.
- * Looks inside logBuffer, extracts JSON, and matches keyword.
- */
-import { logBuffer } from "./stream.js";
+export function getParsedAppsflyerFilters(keyword?: string): ParsedLog[] {
+  const lines = logBuffer.filter(
+    (line) =>
+      line.includes("AppsFlyer") && (keyword ? line.includes(keyword) : true)
+  );
 
-export function getParsedAppsflyerFilters(
-  keyword: string
-): { line: string; json: Record<string, any>; timestamp: string }[] {
-  return logBuffer
-    .filter(line => line.includes(keyword))
-    .map(line => {
+  const recent = lines.slice(-700);
+
+  return recent
+    .map((line) => {
       const json = extractJsonFromLine(line);
       return json
         ? {
-            line,
+            timestamp: line.substring(0, 18),
+            type: keyword || "ALL",
             json,
-            timestamp: line.substring(0, 18)
           }
         : null;
     })
-    .filter(Boolean) as { line: string; json: Record<string, any>; timestamp: string }[];
+    .filter(Boolean) as ParsedLog[];
 }
-
-export function replaceOneLinkPlaceholders(stepsArray: string[], oneLinkUrl: string, uriScheme?: string): string[] {
+export function replaceOneLinkPlaceholders(
+  stepsArray: string[],
+  oneLinkUrl: string,
+  uriScheme?: string
+): string[] {
   const urlObj = new URL(oneLinkUrl);
   let uriSchemeBlock = "";
   if (uriScheme) {
@@ -49,9 +55,9 @@ export function replaceOneLinkPlaceholders(stepsArray: string[], oneLinkUrl: str
       if (!host) host = uri.pathname.replace(/^\//, "") + uri.search;
       uriSchemeBlock = [
         "<intent-filter>",
-        "    <action android:name=\"android.intent.action.VIEW\" />",
-        "    <category android:name=\"android.intent.category.DEFAULT\" />",
-        "    <category android:name=\"android.intent.category.BROWSABLE\" />",
+        '    <action android:name="android.intent.action.VIEW" />',
+        '    <category android:name="android.intent.category.DEFAULT" />',
+        '    <category android:name="android.intent.category.BROWSABLE" />',
         `    <data android:host=\"${host}\" android:scheme=\"${scheme}\" />`,
         "</intent-filter>",
       ].join("\n");
@@ -60,9 +66,12 @@ export function replaceOneLinkPlaceholders(stepsArray: string[], oneLinkUrl: str
       uriSchemeBlock = `\n⚠️ Could not parse uriScheme: ${uriScheme}`;
     }
   }
-  return stepsArray.map(step =>
+  return stepsArray.map((step) =>
     step
-      .replace(/https:\/\/onelink-basic-app\.onelink\.me\/H5hv\/apples/g, oneLinkUrl)
+      .replace(
+        /https:\/\/onelink-basic-app\.onelink\.me\/H5hv\/apples/g,
+        oneLinkUrl
+      )
       .replace(/onelink-basic-app\.onelink\.me/g, urlObj.host)
       .replace(/\/H5hv\/apples/g, urlObj.pathname)
       .replace(/he.wikipedia.org/g, urlObj.hostname)
