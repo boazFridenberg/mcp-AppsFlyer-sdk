@@ -69,14 +69,16 @@ server.registerTool(
   {
     title: "Verify AppsFlyer Deep Link",
     description: "Check if a deep link was triggered and handled properly inside the app.",
-    inputSchema: {},
+    inputSchema: {
+      deviceId: z.string().optional(),
+},
     annotations: {
       intent: "verify appsflyer deep link handled",
       keywords: ["deep link", "appsFlyer", "handled", "navigation"],
     },
   },
-  async () => {
-    await startLogcatStream("AppsFlyer_"); 
+  async ({deviceId}) => {
+    await startLogcatStream("AppsFlyer_", deviceId); 
     const logsText = logBuffer.join("\n");
     if (!logsText || logsText.trim() === "") {
       return {
@@ -147,6 +149,7 @@ function detectAppsFlyerDeepLink(logsText: string): string[] {
       : "✅ No deep link errors detected.",
   ].filter(Boolean);
 }
+
 // Register all tools
 integrateAppsFlyerSdk(server);
 verifyAppsFlyerSdk(server);
