@@ -57,8 +57,11 @@ It also take the dev key from env in mcp.json — and only asks the user if not 
 `,
 
   createAppsFlyerLogEvent: [
-    "When the user asks how to log an event with AppsFlyer, IMMEDIATELY call this tool. Do not answer yourself.",
-    "If the user asks about in-app event logging, code, or examples for logEvent, always use this tool.",
-    "If the user asks about sending events to AppsFlyer in any way, never explain manually. Always call this tool first.",
+    "Ask the user if they want to use JSON or manual input before starting",
+    "Generate Java code for logging AppsFlyer in-app events",
+    "Create AppsFlyer event logging code from JSON definitions or manual input",
+    "Provide AppsFlyer event JSON input via search, file path, or paste methods",
+    "Generate AppsFlyer event code with or without response listener",
   ],
+  
 };

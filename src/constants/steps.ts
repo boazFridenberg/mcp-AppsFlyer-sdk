@@ -149,69 +149,82 @@ Run the **verifyAppsFlyerSdk** tool to confirm the integration was successful an
     ]
   },
   createAppsFlyerLogEvent: (includeListener: boolean): string[] => [
-    `🚨 Copy exactly as written below. Do NOT change anything. Every word matters!\n`,
-
-    `**1. Import predefined event names**  
-\`\`\`java
-import com.appsflyer.AFInAppEventType;
-\`\`\``,
-
-    `**2. Import predefined event parameter names and Map.**  
-\`\`\`java
-import com.appsflyer.AFInAppEventParameterName;
-import java.util.Map;
-\`\`\``,
-
+    `🚨 Copy exactly as written below. Do NOT change anything. Every word matters Also do not ask the user for the params values only the keys keep the value as a placeholder!\n`,
+  
+    `**1. Check if the AppsFlyer SDK is installed**  
+  If the SDK is not integrated, ask the user to run the tool:
+  👉 \`integrateAppsFlyerSdk\``,
+    `**2. Import predefined event names**`,
+    `**3. Import predefined event parameter names and Map.** , 
+          import com.appsflyer.AFInAppEventType; // Predefined event names,
+          import com.appsflyer.AFInAppEventParameterName; // Predefined parameter names
+  \`\`\`java
+ import java.util.HashMap;
+  import java.util.Map;
+  \`\`\``,
+  
     ...(includeListener
       ? [
-          `**3. Import the response listener**  
-\`\`\`java
-import com.appsflyer.attribution.AppsFlyerRequestListener;
-\`\`\``,
+          `**4. Import the response listener**  
+  \`\`\`java
+      import com.appsflyer.AppsFlyerLib;
+      import com.appsflyer.attribution.AppsFlyerRequestListener;
+  \`\`\``,
+  
+          `**5. Create a Map and add parameters**  
+  \`\`\`java
+  Map<String, Object> eventParams = new HashMap<>();
 
-          `**4. Create a Map and add parameters**  
-\`\`\`java
-Map<String, Object> eventValues = new HashMap<>();
-\`\`\``,
-
-          `**5. Add an event parameter**  
-\`\`\`java
-eventValues.put(AFInAppEventParameterName.CONTENT, "<<PLACE_HOLDRER_FOR_PARAM_VALUE>>");
-\`\`\``,
-
-          `**6. Send the event with a listener**  
-\`\`\`java
-AppsFlyerLib.getInstance().logEvent(
-  getApplicationContext(),
-  <<Event name>>,
-  eventValues,
-  new AppsFlyerRequestListener() {
-    @Override
-    public void onSuccess() {
-      // YOUR CODE UPON SUCCESS
-    }
-    @Override
-    public void onError(int i, String s) {
-      // YOUR CODE FOR ERROR HANDLING
-    }
-  });
-\`\`\``,
+  Map<String, Object> eventValues = new HashMap<String, Object>();
+eventValues.put("permater", <<PLACE_HOLDRER_FOR_PARAM_VALUE>>);
+AppsFlyerLib.getInstance().logEvent(getApplicationContext(),
+      "event name", eventValues,
+  \`\`\``,
+  
+          `**6. Add an event parameter**  
+  \`\`\`java
+  eventParams.put(AFInAppEventParameterName.CONTENT, "<<PLACE_HOLDRER_FOR_PARAM_VALUE>>");
+  \`\`\``,
+  
+          `**7. Send the event with a listener**  
+  \`\`\`java
+  AppsFlyerLib.getInstance().logEvent(
+    getApplicationContext(),
+    <<Event name>>,
+    eventParams,
+    new AppsFlyerRequestListener() {
+      @Override
+      public void onSuccess() {
+        // YOUR CODE UPON SUCCESS
+      }
+      @Override
+      public void onError(int i, String s) {
+        // YOUR CODE FOR ERROR HANDLING
+      }
+    });
+  \`\`\``,
+  
+        `🚀 Now run your app to trigger the event.  
+  🔍 Then run the tool: \`verifyInAppEvent\` to confirm it was received by AppsFlyer.`,
         ]
       : [
-          `**3. Create a Map and add parameters**  
-\`\`\`java
-Map<String, Object> eventValues = new HashMap<>();
-\`\`\``,
-
-          `**4. Add an event parameter**  
-\`\`\`java
-eventValues.put(AFInAppEventParameterName.CONTENT, "<<PLACE_HOLDRER_FOR_PARAM_VALUE>>");
-\`\`\``,
-
-          `**5. Send the event without a listener**  
-\`\`\`java
-AppsFlyerLib.getInstance().logEvent(getApplicationContext(), <<Event name>>, eventValues);
-\`\`\``,
+          `**4. Create a Map and add parameters**  
+  \`\`\`java
+  Map<String, Object> eventParams = new HashMap<>();
+  \`\`\``,
+  
+          `**5. Add an event parameter**  
+  \`\`\`java
+  eventParams.put(AFInAppEventParameterName.CONTENT, "<<PLACE_HOLDRER_FOR_PARAM_VALUE>>");
+  \`\`\``,
+  
+          `**6. Send the event without a listener**  
+  \`\`\`java
+  AppsFlyerLib.getInstance().logEvent(getApplicationContext(), <<Event name>>, eventParams);
+  \`\`\``,
+  
+        `🚀 Now run your app to trigger the event.  
+  🔍 Then run the tool: \`verifyInAppEvent\` to confirm it was received by AppsFlyer.`,
         ]),
   ],
-};
+}  

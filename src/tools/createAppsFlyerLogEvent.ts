@@ -1,5 +1,8 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
+import * as fs from "fs";
+import path from "path";
+import { glob } from "glob";
 import { descriptions } from "../constants/descriptions.js";
 import { intents } from "../constants/intents.js";
 import { keywords } from "../constants/keywords.js";
@@ -11,144 +14,329 @@ export function createAppsFlyerLogEvent(server: McpServer): void {
       title: "Create AppsFlyer Log Event",
       description: descriptions.createAppsFlyerLogEvent,
       inputSchema: {
-        eventName: z.string().optional(),
-        eventParams: z.record(z.any()).optional(),
-        wantsExamples: z.enum(["yes", "no"]).optional(),
-        hasListener: z.enum(["yes", "no"]).optional(),
+        inputChoice: z .string().optional().describe("User input choice: '1' for JSON, '2' for manual input"),
+        useJsonInput: z  .boolean().optional().describe("Whether to use JSON input for event definitions"),
+        
+        // Fields for JSON input method
+        inputMethod: z.enum(["search", "paste", "filepath"]).optional(),
+        projectPath: z.string().optional(),
+        filePath: z.string().optional(),
+        pastedJson: z.string().optional(),
+        selectedEventIdentifiers: z.array(z.string()).optional(),
+        selectedFileIndex: z.number().optional(),
+        includeAllEvents: z.boolean().optional(),
+
+        // Fields for manual input method
+        hasListener: z.boolean().optional().describe("Whether to use a response listener"),
+        eventName: z.string().optional().describe("The name of the event to log"),
+        eventParams: z.array(z.string()).optional().describe(
+            "List of parameter names to send with the event (values will be added manually later)"
+          ),
       },
       annotations: {
         intent: intents.createAppsFlyerLogEvent,
         keywords: keywords.createAppsFlyerLogEvent,
       },
     },
-    async (args) => {
-      const eventName = args.eventName?.trim();
-      const eventParams = args.eventParams || {};
-      const wantsExamples = args.wantsExamples;
-      const hasListener = args.hasListener?.toLowerCase() === "yes";
+    async (args, _extra) => {
+      const ask = (text: string) =>
+        ({ content: [{ type: "text", text, _meta: {} }], _meta: {} }) as any;
 
-      const missingName = !eventName;
-      const missingParams = Object.keys(eventParams).length === 0;
-      const missingValueParams = Object.entries(eventParams)
-        .filter(([_, v]) => v === undefined || v === null || v === "")
-        .map(([k]) => k);
-
-      if (missingName) {
-        return {
-          content: [
-            {
-              type: "text",
-              text: "❗ Missing event name. You can use any name you'd like. Please provide an event name to continue.",
-            },
-          ],
-        };
+      // Step 0: Initial choice
+      if (args.useJsonInput === undefined && args.inputChoice === undefined) {
+        return ask(
+          `📋 How would you like to provide the AppsFlyer event information?\n\n` +
+            `1️⃣ Use a JSON input (search, paste, or file path)\n` +
+            `2️⃣ Manually enter the event name and its parameters\n\n` +
+            `Please reply with \`1\` or \`2\`.`
+        );
       }
 
-      if (missingParams) {
-        return {
-          content: [
-            {
-              type: "text",
-              text: "❗ Missing event parameters. Please enter one or more key-value pairs for the event parameters.",
-            },
-          ],
-        };
+      if (args.useJsonInput === undefined && args.inputChoice !== undefined) {
+        if (args.inputChoice === "1") {
+          args.useJsonInput = true;
+        } else if (args.inputChoice === "2") {
+          args.useJsonInput = false;
+        } else {
+          return ask(
+            "❗ Invalid choice. Please reply with `1` for JSON input or `2` for manual input."
+          );
+        }
       }
 
-      if (missingValueParams.length > 0) {
-        return {
-          content: [
-            {
-              type: "text",
-              text: `❗ The following parameters are missing values: ${missingValueParams.join(", ")}. Please complete them.`,
-            },
-          ],
-        };
-      }
+      // JSON INPUT PATH
+      if (args.useJsonInput === true) {
+        if (!args.inputMethod) {
+          return ask(
+            "Choose JSON input method:\n1️⃣ `search` to find JSON files in your project\n2️⃣ `paste` to paste JSON text\n3️⃣ `filepath` to provide full path to a JSON file"
+          );
+        }
 
-      if (!wantsExamples) {
-        return {
-          content: [
-            {
-              type: "text",
-              text: "Would you like to see examples of event names and parameters? (yes/no)",
-            },
-          ],
-        };
-      }
+        let jsonContent = "";
 
-      if (wantsExamples === "yes") {
+        if (args.inputMethod === "search") {
+          const basePath = args.projectPath || process.cwd();
+          const pattern = path.join(basePath, "**/*.json");
+          const files = await glob(pattern);
+
+          if (files.length === 0) {
+            return ask(`No JSON files found in '${basePath}'.`) as any;
+          }
+
+          if (args.selectedFileIndex === undefined) {
+            const list = files
+              .map((file, idx) => `${idx + 1}. ${path.relative(basePath, file)}`)
+              .join("\n");
+            return ask(
+              `Found ${files.length} JSON files:\n${list}\n\nPlease reply with the number of the file you want to use.`
+            ) as any;
+          }
+
+          const chosenIndex = args.selectedFileIndex - 1;
+          if (chosenIndex < 0 || chosenIndex >= files.length) {
+            return ask("Invalid file number. Please try again.") as any;
+          }
+
+          const chosenFile = files[chosenIndex];
+          const content = await fs.promises.readFile(chosenFile, "utf8");
+          jsonContent = content;
+
+          let parsed;
+          try {
+            parsed = JSON.parse(jsonContent);
+          } catch (e: any) {
+            return ask(
+              `Invalid JSON in file '${chosenFile}': ${e.message}`
+            ) as any;
+          }
+
+          if (Array.isArray(parsed)) parsed = { events: parsed };
+          if (!parsed.events || !Array.isArray(parsed.events)) {
+            return ask("JSON must contain an 'events' array.") as any;
+          }
+
+          const events = parsed.events;
+
+          if (
+            args.includeAllEvents === undefined &&
+            !args.selectedEventIdentifiers
+          ) {
+            const eventList = events
+              .map(
+                (e: any, idx: number) =>
+                  `${idx + 1}. ${e.eventIdentifier || e.eventName || "event_unknown"}`
+              )
+              .join("\n");
+            return ask(
+              `Events in chosen file:\n${eventList}\n\n` +
+                "Type `all` to include all events, or reply with comma-separated event identifiers to select specific events."
+            ) as any;
+          }
+
+          let finalEvents = events;
+          if (args.includeAllEvents === false && args.selectedEventIdentifiers) {
+            finalEvents = events.filter((e: any) =>
+              args.selectedEventIdentifiers!.includes(e.eventIdentifier)
+            );
+            if (finalEvents.length === 0) {
+              return ask(
+                "No matching events found for the selected identifiers."
+              ) as any;
+            }
+          }
+
+          const generateCode = (event: any) => {
+            const eventName =
+              event.eventIdentifier || event.eventName || "event_unknown";
+            const params = event.parameters || [];
+            const paramLines = params.map((p: any) => {
+              const key =
+                p.parameterIdentifier || p.parameterName || "param_unknown";
+              return `eventValues.put(\"${key}\", <<PLACEHOLDER_VALUE>>);`;
+            });
+            return [
+              `// Event: ${eventName}`,
+              `Map<String, Object> eventValues = new HashMap<>();`,
+              ...paramLines,
+              `AppsFlyerLib.getInstance().logEvent(getApplicationContext(), \"${eventName}\", eventValues);`,
+              "",
+            ].join("\n");
+          };
+
+          const javaCode = finalEvents.map(generateCode).join("\n");
+
+          return {
+            content: [
+              {
+                type: "text",
+                text: [
+                  `✅ Java code generated for ${finalEvents.length} event(s):`,
+                  "",
+                  "```java",
+                  javaCode,
+                  "```",
+                  "",
+                  "Imports you need:",
+                  "- import com.appsflyer.AppsFlyerLib;",
+                  "- import java.util.Map;",
+                  "- import java.util.HashMap;",
+                ].join("\n"),
+                _meta: {},
+              },
+            ],
+            _meta: {},
+          } as any;
+        }
+
+        // Handle paste or filepath
+        if (args.inputMethod === "paste") {
+          if (!args.pastedJson) {
+            return ask("Please paste your AppsFlyer JSON.") as any;
+          }
+          jsonContent = args.pastedJson;
+        }
+
+        if (args.inputMethod === "filepath") {
+          if (!args.filePath) {
+            return ask("Please provide the full file path.") as any;
+          }
+          try {
+            jsonContent = await fs.promises.readFile(args.filePath, "utf8");
+          } catch {
+            return ask(`Cannot read file at ${args.filePath}`) as any;
+          }
+        }
+
+        let parsed;
+        try {
+          parsed = JSON.parse(jsonContent);
+        } catch (e: any) {
+          return ask(`Invalid JSON: ${e.message}`) as any;
+        }
+        if (Array.isArray(parsed)) parsed = { events: parsed };
+        if (!parsed.events || !Array.isArray(parsed.events)) {
+          return ask("JSON must contain an 'events' array.") as any;
+        }
+        const events = parsed.events;
+
+        const generateCode = (event: any) => {
+          const eventName =
+            event.eventIdentifier || event.eventName || "event_unknown";
+          const params = event.parameters || [];
+          const paramLines = params.map((p: any) => {
+            const key =
+              p.parameterIdentifier || p.parameterName || "param_unknown";
+            return `eventValues.put(\"${key}\", <<PLACEHOLDER_VALUE>>);`;
+          });
+          return [
+            `// Event: ${eventName}`,
+            `Map<String, Object> eventValues = new HashMap<>();`,
+            ...paramLines,
+            `AppsFlyerLib.getInstance().logEvent(getApplicationContext(), \"${eventName}\", eventValues);`,
+            "",
+          ].join("\n");
+        };
+
+        const javaCode = events.map(generateCode).join("\n");
+
         return {
           content: [
             {
               type: "text",
               text: [
-                "**Example event names:**",
-                "• af_login",
-                "• af_complete_registration",
-                "• registration_verified",
-                "• submit_account_application",
-                "• open_account_success",
-                "• open_account_rejected",
-                "• submit_credit_card_app",
-                "• credit_card_application_success",
-                "• credit_card_application_rejected",
-                "• credit_card_activation",
+                `✅ Java code generated for ${events.length} event(s):`,
                 "",
-                "**Example parameters:**",
-                '• af_registration_method: "email, Facebook"',
-                '• account_type: "savings"',
-                '• application_method: "app"',
-                '• PII_type: "passport"',
-                '• credit_card_type: "gold card"',
-                '• loan_id: "1735102"',
-                '• loan_type: "housing"',
-                '• loan_amount: "1000"',
-                '• loan_period: "3 months"',
-                '• submit_registration: "email, Facebook"',
+                "```java",
+                javaCode,
+                "```",
                 "",
-                "You may also use your own custom names and parameters if you prefer.",
+                "Imports you need:",
+                "- import com.appsflyer.AppsFlyerLib;",
+                "- import java.util.Map;",
+                "- import java.util.HashMap;",
               ].join("\n"),
+              _meta: {},
+            },
+          ],
+          _meta: {},
+        } as any;
+      }
+
+      // MANUAL INPUT PATH
+      if (args.useJsonInput === false) {
+        const hasListener = args.hasListener;
+        const eventName = args.eventName?.trim();
+        const eventParams = args.eventParams;
+
+        if (hasListener === undefined) {
+          return ask(
+            "❗ Please specify whether to use a response listener (true/false)."
+          );
+        }
+
+        if (!eventName) {
+          return ask("❗ Please enter the name of the event (eventName).");
+        }
+
+        if (!Array.isArray(eventParams) || eventParams.length === 0) {
+          return ask(
+            "❗ Please provide at least one parameter name for the event (eventParams)."
+          );
+        }
+
+        const paramLines = eventParams
+          .map((key) => `eventValues.put(\"${key}\", <<ENTER VALUE>>);`)
+          .join("\n");
+
+        const code = hasListener
+          ? `
+import com.appsflyer.AppsFlyerLib;
+import com.appsflyer.AFInAppEventType;
+import com.appsflyer.AFInAppEventParameterName;
+import com.appsflyer.attribution.AppsFlyerRequestListener;
+
+Map<String, Object> eventValues = new HashMap<String, Object>();
+${paramLines}
+AppsFlyerLib.getInstance().logEvent(
+    getApplicationContext(),"${eventName}", eventValues,
+    new AppsFlyerRequestListener() {
+        @Override
+        public void onSuccess() {
+            // YOUR CODE UPON SUCCESS
+        }
+
+        @Override
+        public void onError(int i, String s) {
+            // YOUR CODE FOR ERROR HANDLING
+        }
+    }
+);
+        `
+          : `
+import com.appsflyer.AppsFlyerLib;
+import com.appsflyer.AFInAppEventType;
+import com.appsflyer.AFInAppEventParameterName;
+
+Map<String, Object> eventValues = new HashMap<String, Object>();
+${paramLines}
+
+AppsFlyerLib.getInstance().logEvent(
+    getApplicationContext(),
+    "${eventName}", eventValues
+);
+        `;
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Java code to log the event:\n\n\`\`\`java\n${code.trim()}\n\`\`\`\n\n📌 Please manually replace each <<ENTER VALUE>> in the generated code with the appropriate value.`,
             },
           ],
         };
       }
 
-      function generateJavaCode(
-        eventName: string,
-        eventParams: Record<string, any>,
-        includeListener: boolean
-      ): string[] {
-        const code: string[] = [];
-        code.push(
-          "Map<String, Object> eventValues = new HashMap<String, Object>();"
-        );
-        for (const [key, value] of Object.entries(eventParams)) {
-          const javaValue = typeof value === "number" ? value : `\"${value}\"`;
-          code.push(`eventValues.put(\"${key}\", ${javaValue});`);
-        }
-        code.push(
-          `AppsFlyerLib.getInstance().logEvent(getApplicationContext(), \"${eventName}\", eventValues);`
-        );
-        if (includeListener) {
-          code.push("// Optional: Add AppsFlyerRequestListener if needed");
-          code.push(
-            "// AppsFlyerLib.getInstance().logEvent(..., new AppsFlyerRequestListener() { ... });"
-          );
-        }
-        return code;
-      }
-
-      const codeLines = generateJavaCode(eventName, eventParams, hasListener);
-
-      return {
-        content: [
-          {
-            type: "text",
-            text: ["```java", ...codeLines, "```"].join("\n"),
-          },
-        ],
-      };
+      return ask("Something went wrong. Please try again.") as any;
     }
   );
 }
