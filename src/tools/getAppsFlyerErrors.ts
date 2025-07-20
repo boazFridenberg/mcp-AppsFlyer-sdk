@@ -1,4 +1,5 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { z } from "zod";
 import { startLogcatStream } from "../logcat/stream.js";
 import { getParsedAppsflyerFilters } from "../logcat/parse.js";
 import { descriptions } from "../constants/descriptions.js";
@@ -11,6 +12,9 @@ export function getAppsflyerErrors(server: McpServer): void {
     {
       title: "Get AppsFlyer Errors",
       description: descriptions.getAppsflyerErrors,
+      inputSchema: {
+        deviceId: z.string().optional(),
+      },
       annotations: {
         intent: intents.getAppsflyerErrors,
         keywords: keywords.getAppsflyerErrors,
