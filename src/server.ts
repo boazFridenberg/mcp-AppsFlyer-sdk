@@ -76,7 +76,7 @@ server.registerTool(
     },
   },
   async () => {
-    await startLogcatStream(); 
+    await startLogcatStream("AppsFlyer_"); 
     const logsText = logBuffer.join("\n");
     if (!logsText || logsText.trim() === "") {
       return {
