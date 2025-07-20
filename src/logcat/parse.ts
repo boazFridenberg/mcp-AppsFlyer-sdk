@@ -22,23 +22,19 @@ import { logBuffer } from "./stream.js";
 export function getParsedAppsflyerFilters(
   keyword: string
 ): { line: string; json: Record<string, any>; timestamp: string }[] {
-  const results = [];
-
-  for (const line of logBuffer) {
-    if (!line.includes(keyword)) continue;
-
-  return recent
+  return logBuffer
+    .filter(line => line.includes(keyword))
     .map(line => {
       const json = extractJsonFromLine(line);
       return json
         ? {
-            timestamp: line.substring(0, 18),
-            type: keyword || "ALL",
-            json
+            line,
+            json,
+            timestamp: line.substring(0, 18)
           }
         : null;
     })
-    .filter(Boolean) as ParsedLog[];
+    .filter(Boolean) as { line: string; json: Record<string, any>; timestamp: string }[];
 }
 
 export function replaceOneLinkPlaceholders(stepsArray: string[], oneLinkUrl: string, uriScheme?: string): string[] {
