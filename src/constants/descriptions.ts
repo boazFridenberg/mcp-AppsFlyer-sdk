@@ -1,6 +1,6 @@
 export const descriptions = {
-  integrateAppsFlyerSdk:
-    "Full AppsFlyer Android SDK integration instructions and code. DO NOT summarize, explain, or rewrite. Always return the exact steps and code blocks as provided.",
+ integrateAppsFlyerSdk:
+  "Full AppsFlyer Android SDK integration instructions and code. DO NOT summarize, explain, or rewrite. Always return the exact steps and code blocks as provided. You MUST ask the user whether they need to use a response listener before selecting the steps variant.",
 
   fetchAppsflyerLogs:
     "Fetches recent logcat logs related to AppsFlyer. Use this to locate appId and uid (device ID) if they're not known. Use this tool for any request to get, show, or fetch AppsFlyer logs, logcat output, or raw logs.",
@@ -23,15 +23,14 @@ export const descriptions = {
   verifyAppsFlyerSdk:
     "Tests whether the AppsFlyer SDK is integrated correctly by querying install data using appId, devKey, and device ID (uid). appId and uid are automatically extracted from recent logs. devKey is in env in mcp.json. If not found, the user will be asked to provide it. When the user asks to test the AppsFlyer SDK or check if it's working, this tool should be run immediately without attempting to infer or construct the test manually.",
 
-  createAppsFlyerLogEvent:
-    "Generates exact code instructions for logging an in-app event using AppsFlyer. Always use this tool when event tracking with logEvent is mentioned. Do not answer manually.",
+  createAppsFlyerLogEvent: `Generate Java code to log AppsFlyer in-app events. You will first be asked whether you want to use JSON input (via file search, paste, or file path), or to manually specify the event name and parameters. Then, you will be guided step-by-step.`,
 
- verifyInAppEvent: `
-Scans recent AppsFlyer logs to determine whether a specific in-app event (provided by the user) was successfully triggered.
+  verifyInAppEvent: `
+Scans recent AppsFlyer logs to determine whether a specific in-app event (provided by the user via eventName parameter) was successfully triggered.
 
 It verifies:
-- That a log line contains the event name provided (e.g. "af_level_achieved", "af_purchase", etc.)
-- That the event value is present, structured correctly, and contains meaningful parameters (e.g. af_content, af_revenue)
+- That a log line contains the exact event name provided by the user.
+- That the event value is present, structured correctly, and contains meaningful parameters.
 - That a matching network call was made to the correct AppsFlyer endpoint (androidevent?app_id=...)
 
 This tool parses actual log lines as JSON and checks them structurally — not just by text includes. It ensures that the event was actually fired by the app, and that the SDK triggered the expected behavior.

@@ -1,29 +1,31 @@
-import { logBuffer, startLogcatStream } from "./stream.js";
-
-export interface ParsedLog {
-  timestamp: string;
-  type: string;
-  json: Record<string, any>;
-}
-
+/**
+ * Attempts to parse JSON embedded inside a log line (if any).
+ * Assumes JSON object is at end of line or inside brackets.
+ */
 export function extractJsonFromLine(line: string): Record<string, any> | null {
-  if (!line) return null;
-  const match = line.match(/{.*}/s);
-  if (!match) return null;
+  const jsonMatch = line.match(/\{.*\}$/);
+  if (!jsonMatch) return null;
 
   try {
-    return JSON.parse(match[0]);
+    return JSON.parse(jsonMatch[0]);
   } catch {
     return null;
   }
 }
- 
-export function getParsedAppsflyerFilters(keyword?: string): ParsedLog[] {
-  const lines = logBuffer.filter(
-    line => line.includes("AppsFlyer") && (keyword ? line.includes(keyword) : true)
-  );
 
-  const recent = lines.slice(-700);
+/**
+ * Returns logs with JSON filtered by keyword prefix in the log message.
+ * Looks inside logBuffer, extracts JSON, and matches keyword.
+ */
+import { logBuffer } from "./stream.js";
+
+export function getParsedAppsflyerFilters(
+  keyword: string
+): { line: string; json: Record<string, any>; timestamp: string }[] {
+  const results = [];
+
+  for (const line of logBuffer) {
+    if (!line.includes(keyword)) continue;
 
   return recent
     .map(line => {
@@ -71,5 +73,3 @@ export function replaceOneLinkPlaceholders(stepsArray: string[], oneLinkUrl: str
       .replace(/<URISCHEME_INTENT_FILTER>/g, uriSchemeBlock)
   );
 }
-
-

@@ -1,9 +1,11 @@
 // constants/intents.ts
 
 export const intents = {
-  integrateAppsFlyerSdk: `
+ integrateAppsFlyerSdk: `
 When the user asks how to integrate the AppsFlyer SDK into their Android app — in any way — IMMEDIATELY call this tool.
 Do not generate your own instructions. Do not rephrase. Do not explain. Just use this tool exactly as-is.
+
+Before generating any output, you MUST ask the user if they need to use a response listener. Based on their answer, select the appropriate steps variant (with or without response listener).
 
 Once integration is complete, suggest running the verifyAppsFlyerSdk tool to validate the setup and confirm the SDK is working properly.
 
@@ -41,10 +43,10 @@ Do not analyze logs or try to guess the error yourself.
 `,
 
   verifyInAppEvent: `
-If the user wants to check if the in-app event "af_level_achieved" was triggered or logged — always use this tool directly.
+If the user wants to check if a specific in-app event was triggered or logged — always use this tool directly with the event name provided by the user.
 
 Never guess. Never simulate output. Never explain the logic. 
-This is the only tool responsible for validating whether the event "af_level_achieved" appears in the logs.
+This is the only tool responsible for validating whether the specified event appears in the logs.
 `,
 
   verifyAppsFlyerSdk: `
@@ -55,9 +57,11 @@ It also take the dev key from env in mcp.json — and only asks the user if not 
 `,
 
   createAppsFlyerLogEvent: [
-    "When the user asks how to log an event with AppsFlyer, IMMEDIATELY call this tool. Do not answer yourself.",
-    "If the user asks about in-app event logging, code, or examples for logEvent, always use this tool.",
-    "If the user asks about sending events to AppsFlyer in any way, never explain manually. Always call this tool first.",
+    "Ask the user if they want to use JSON or manual input before starting",
+    "Generate Java code for logging AppsFlyer in-app events",
+    "Create AppsFlyer event logging code from JSON definitions or manual input",
+    "Provide AppsFlyer event JSON input via search, file path, or paste methods",
+    "Generate AppsFlyer event code with or without response listener",
   ],
 
   DetectAppsFlyerDeepLink: `
@@ -97,4 +101,5 @@ If Deferred Deep Link:
 
 ⚠️ All steps must be followed exactly. Skipping or modifying even one line may break the deep link.
 `,
+
 };
