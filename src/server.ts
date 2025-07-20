@@ -68,21 +68,26 @@ server.registerTool(
   "VerifyAppsFlyerDeepLink",
   {
     title: "Verify AppsFlyer Deep Link",
-    description: "Check if a deep link was triggered and handled properly inside the app.",
+    description: descriptions.VerifyAppsFlyerDeepLink,
     inputSchema: {
       deviceId: z.string().optional(),
-},
+    },
     annotations: {
-      intent: "verify appsflyer deep link handled",
-      keywords: ["deep link", "appsFlyer", "handled", "navigation"],
+      intent: intents.VerifyAppsFlyerDeepLink,
+      keywords: keywords.VerifyAppsFlyerDeepLink,
     },
   },
-  async ({deviceId}) => {
-    await startLogcatStream("AppsFlyer_", deviceId); 
+  async ({ deviceId }) => {
+    await startLogcatStream("AppsFlyer_", deviceId);
     const logsText = logBuffer.join("\n");
     if (!logsText || logsText.trim() === "") {
       return {
-        content: [{ type: "text", text: "⚠️ No logs found. Make sure logcat is streaming." }],
+        content: [
+          {
+            type: "text",
+            text: "⚠️ No logs found. Make sure logcat is streaming.",
+          },
+        ],
       };
     }
 
@@ -102,7 +107,6 @@ server.registerTool(
           `• Found deep link value: ${hasSpecificDeeplinkValue}`,
         ].join("\n");
 
-   
     const deepLinkReport = detectAppsFlyerDeepLink(logText);
 
     return {

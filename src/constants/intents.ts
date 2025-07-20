@@ -67,7 +67,7 @@ It also take the dev key from env in mcp.json — and only asks the user if not 
   DetectAppsFlyerDeepLink: `
 If the user asks to detect, analyze, or debug deep links (direct or deferred) from AppsFlyer logs, use this tool immediately. Do not attempt to analyze logs manually or explain deep link types yourself.`,
 
-  VerifyAppsFlyerDeepLinkHandled: `
+  VerifyAppsFlyerDeepLink: `
 If the user wants to verify that a deep link triggered a flow in the app, use this tool to confirm the app responded to the deep link. Do not try to infer or simulate the flow manually.`,
 
   createDeepLink:

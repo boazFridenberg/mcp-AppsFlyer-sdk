@@ -42,7 +42,7 @@ Do not simulate results. Do not explain. Always call this tool when asked to tes
   DetectAppsFlyerDeepLink: `
 Detects and analyzes deep links triggered from AppsFlyer logs, including type (direct/deferred), values, and errors. Use this tool to determine if a deep link was received and what kind of deep link it was.`,
 
-  VerifyAppsFlyerDeepLinkHandled: `
+  VerifyAppsFlyerDeepLink: `
 Verifies that a deep link triggered a flow in the app by analyzing logs for activity starts, routing, and deep link values. Use this tool to confirm that the app responded to a deep link as expected.`,
 
 createDeepLink: `
