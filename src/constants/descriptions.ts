@@ -53,7 +53,7 @@ The tool will:
   If they don’t know what that is, tell them to ask their marketing team.
 
 - Ask whether to include a custom uriScheme
-  (used for non-HTTPS deep links like myapp://).
+  (used for deep links like myapp:// in addition to https:// links).
 
 - Ask whether this is a Direct or Deferred Deep Link integration.
 
@@ -61,27 +61,22 @@ If Direct:
 - Show exact AndroidManifest setup with intent-filter for the OneLink HTTPS domain.
 - (Optional) Add a second intent-filter for the uriScheme, if requested.
 - Guide the user to generate a SHA256 fingerprint using the debug or release keystore:
-    - Provide the exact keytool command and example output.
+    - Provide the exact keytool command and sample output.
 - Instruct the user to send the SHA256 fingerprint to the marketing team to configure the OneLink template.
 - Provide full Java code to subscribe to AppsFlyer's DeepLinkListener and handle deep link results.
-- Instruct the user to launch the app on a physical device or emulator.
-- Then prompt the user to run the tool **verifyDeepLink**.
+- Instruct the user to launch the app on a real or virtual device to initialize the SDK.
+- Then prompt the user to run the tool **verifyDeepLink** to validate the behavior.
 
 If Deferred:
-- Ensure the app is freshly installed (not updated).
-- Show full code to set up the AppsFlyerConversionListener inside the SDK initialization.
-- Instruct the user to:
-    - Handle af_dp value inside onConversionDataSuccess.
-    - Launch the app and check the flow.
-- Then prompt the user to run:
-    - **integrateAppsFlyerSdk** to verify SDK setup.
-    - **verifyAppsFlyerSdk** to validate deferred deep linking data flow.
+- Show only the Java code to subscribe to the AppsFlyer DeepLinkListener.
+- Instruct the user to handle both direct and deferred deep link results inside the callback.
+- Prompt the user to launch the app and run the tool **verifyDeepLink**.
 
 ⚠️ Every step must be followed exactly.
 Any missing or modified line may cause deep linking to fail.
-Do not skip any instruction or change the order.
-`};
-
+Do not skip or change the instructions.
+`
+};
 
 
     
