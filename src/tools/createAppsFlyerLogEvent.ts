@@ -14,10 +14,10 @@ export function createAppsFlyerLogEvent(server: McpServer): void {
       title: "Create AppsFlyer Log Event",
       description: descriptions.createAppsFlyerLogEvent,
       inputSchema: {
-        inputChoice: z .string().optional().describe("User input choice: '1' for JSON, '2' for manual input"),
-        useJsonInput: z  .boolean().optional().describe("Whether to use JSON input for event definitions"),
-        
-        // Fields for JSON input method
+        inputChoice: z.string().optional().describe("User input choice: '1' for JSON, '2' for manual input"),
+        useJsonInput: z.boolean().optional().describe("Whether to use JSON input for event definitions"),
+
+        // JSON input method fields
         inputMethod: z.enum(["search", "paste", "filepath"]).optional(),
         projectPath: z.string().optional(),
         filePath: z.string().optional(),
@@ -26,12 +26,12 @@ export function createAppsFlyerLogEvent(server: McpServer): void {
         selectedFileIndex: z.number().optional(),
         includeAllEvents: z.boolean().optional(),
 
-        // Fields for manual input method
+        // Manual input fields
         hasListener: z.boolean().optional().describe("Whether to use a response listener"),
         eventName: z.string().optional().describe("The name of the event to log"),
         eventParams: z.array(z.string()).optional().describe(
-            "List of parameter names to send with the event (values will be added manually later)"
-          ),
+          "List of parameter names to send with the event (values will be added manually later)"
+        ),
       },
       annotations: {
         intent: intents.createAppsFlyerLogEvent,
@@ -39,10 +39,11 @@ export function createAppsFlyerLogEvent(server: McpServer): void {
       },
     },
     async (args, _extra) => {
+      // Helper to prompt the user with text
       const ask = (text: string) =>
         ({ content: [{ type: "text", text, _meta: {} }], _meta: {} }) as any;
 
-      // Step 0: Initial choice
+      // Step 0: Ask user for input choice if not specified
       if (args.useJsonInput === undefined && args.inputChoice === undefined) {
         return ask(
           `📋 How would you like to provide the AppsFlyer event information?\n\n` +
@@ -52,6 +53,7 @@ export function createAppsFlyerLogEvent(server: McpServer): void {
         );
       }
 
+      // Map inputChoice to useJsonInput boolean
       if (args.useJsonInput === undefined && args.inputChoice !== undefined) {
         if (args.inputChoice === "1") {
           args.useJsonInput = true;
@@ -64,8 +66,9 @@ export function createAppsFlyerLogEvent(server: McpServer): void {
         }
       }
 
-      // JSON INPUT PATH
+      // === JSON INPUT FLOW ===
       if (args.useJsonInput === true) {
+        // Ask for JSON input method if not provided
         if (!args.inputMethod) {
           return ask(
             "Choose JSON input method:\n1️⃣ `search` to find JSON files in your project\n2️⃣ `paste` to paste JSON text\n3️⃣ `filepath` to provide full path to a JSON file"
@@ -74,6 +77,7 @@ export function createAppsFlyerLogEvent(server: McpServer): void {
 
         let jsonContent = "";
 
+        // Handle 'search' method: find JSON files in project
         if (args.inputMethod === "search") {
           const basePath = args.projectPath || process.cwd();
           const pattern = path.join(basePath, "**/*.json");
@@ -101,13 +105,12 @@ export function createAppsFlyerLogEvent(server: McpServer): void {
           const content = await fs.promises.readFile(chosenFile, "utf8");
           jsonContent = content;
 
+          // Parse JSON & validate structure
           let parsed;
           try {
             parsed = JSON.parse(jsonContent);
           } catch (e: any) {
-            return ask(
-              `Invalid JSON in file '${chosenFile}': ${e.message}`
-            ) as any;
+            return ask(`Invalid JSON in file '${chosenFile}': ${e.message}`) as any;
           }
 
           if (Array.isArray(parsed)) parsed = { events: parsed };
@@ -117,10 +120,8 @@ export function createAppsFlyerLogEvent(server: McpServer): void {
 
           const events = parsed.events;
 
-          if (
-            args.includeAllEvents === undefined &&
-            !args.selectedEventIdentifiers
-          ) {
+          // Ask user to select events or include all
+          if (args.includeAllEvents === undefined && !args.selectedEventIdentifiers) {
             const eventList = events
               .map(
                 (e: any, idx: number) =>
@@ -133,37 +134,67 @@ export function createAppsFlyerLogEvent(server: McpServer): void {
             ) as any;
           }
 
+          // Filter selected events if needed
           let finalEvents = events;
           if (args.includeAllEvents === false && args.selectedEventIdentifiers) {
             finalEvents = events.filter((e: any) =>
               args.selectedEventIdentifiers!.includes(e.eventIdentifier)
             );
             if (finalEvents.length === 0) {
-              return ask(
-                "No matching events found for the selected identifiers."
-              ) as any;
+              return ask("No matching events found for the selected identifiers.") as any;
             }
           }
 
-          const generateCode = (event: any) => {
-            const eventName =
-              event.eventIdentifier || event.eventName || "event_unknown";
+          // --- NEW: Ask if user wants to include listener for all events ---
+          if (args.hasListener === undefined) {
+            return ask(
+              "❓ Would you like to include AppsFlyerRequestListener for all events? (true/false) "
+            );
+          }
+
+          // Generate Java code for each event based on listener choice
+          const generateCode = (event: any, withListener: boolean) => {
+            const eventName = event.eventIdentifier || event.eventName || "event_unknown";
             const params = event.parameters || [];
             const paramLines = params.map((p: any) => {
-              const key =
-                p.parameterIdentifier || p.parameterName || "param_unknown";
-              return `eventValues.put(\"${key}\", <<PLACEHOLDER_VALUE>>);`;
+              const key = p.parameterIdentifier || p.parameterName || "param_unknown";
+              return `eventValues.put("${key}", <<PLACEHOLDER_VALUE>>);`;
             });
-            return [
-              `// Event: ${eventName}`,
-              `Map<String, Object> eventValues = new HashMap<>();`,
-              ...paramLines,
-              `AppsFlyerLib.getInstance().logEvent(getApplicationContext(), \"${eventName}\", eventValues);`,
-              "",
-            ].join("\n");
+
+            if (withListener) {
+              return [
+                `// Event: ${eventName}`,
+                `Map<String, Object> eventValues = new HashMap<>();`,
+                ...paramLines,
+                `AppsFlyerLib.getInstance().logEvent(`,
+                `    getApplicationContext(), "${eventName}", eventValues,`,
+                `    new AppsFlyerRequestListener() {`,
+                `        @Override`,
+                `        public void onSuccess() {`,
+                `            // YOUR CODE UPON SUCCESS`,
+                `        }`,
+                `        @Override`,
+                `        public void onError(int i, String s) {`,
+                `            // YOUR CODE FOR ERROR HANDLING`,
+                `        }`,
+                `    }`,
+                `);`,
+                ``,
+              ].join("\n");
+            } else {
+              return [
+                `// Event: ${eventName}`,
+                `Map<String, Object> eventValues = new HashMap<>();`,
+                ...paramLines,
+                `AppsFlyerLib.getInstance().logEvent(getApplicationContext(), "${eventName}", eventValues);`,
+                ``,
+              ].join("\n");
+            }
           };
 
-          const javaCode = finalEvents.map(generateCode).join("\n");
+          const javaCode = finalEvents
+            .map((event: any) => generateCode(event, args.hasListener!))
+            .join("\n");
 
           return {
             content: [
@@ -180,7 +211,10 @@ export function createAppsFlyerLogEvent(server: McpServer): void {
                   "- import com.appsflyer.AppsFlyerLib;",
                   "- import java.util.Map;",
                   "- import java.util.HashMap;",
-                ].join("\n"),
+                  args.hasListener ? "- import com.appsflyer.attribution.AppsFlyerRequestListener;" : "",
+                ]
+                  .filter(Boolean)
+                  .join("\n"),
                 _meta: {},
               },
             ],
@@ -188,7 +222,8 @@ export function createAppsFlyerLogEvent(server: McpServer): void {
           } as any;
         }
 
-        // Handle paste or filepath
+        // === Handle paste or filepath input methods similarly ===
+
         if (args.inputMethod === "paste") {
           if (!args.pastedJson) {
             return ask("Please paste your AppsFlyer JSON.") as any;
@@ -207,62 +242,95 @@ export function createAppsFlyerLogEvent(server: McpServer): void {
           }
         }
 
-        let parsed;
         try {
-          parsed = JSON.parse(jsonContent);
+          let parsed = JSON.parse(jsonContent);
+          if (Array.isArray(parsed)) parsed = { events: parsed };
+          if (!parsed.events || !Array.isArray(parsed.events)) {
+            return ask("JSON must contain an 'events' array.") as any;
+          }
+
+          const events = parsed.events;
+
+          // Ask about listener for paste/filepath too
+          if (args.hasListener === undefined) {
+            return ask(
+              "❓Would you like to include AppsFlyerRequestListener for all events? (true/false)"
+            );
+          }
+
+          const generateCode = (event: any, withListener: boolean) => {
+            const eventName = event.eventIdentifier || event.eventName || "event_unknown";
+            const params = event.parameters || [];
+            const paramLines = params.map((p: any) => {
+              const key = p.parameterIdentifier || p.parameterName || "param_unknown";
+              return `eventValues.put("${key}", <<PLACEHOLDER_VALUE>>);`;
+            });
+
+            if (withListener) {
+              return [
+                `// Event: ${eventName}`,
+                `Map<String, Object> eventValues = new HashMap<>();`,
+                ...paramLines,
+                `AppsFlyerLib.getInstance().logEvent(`,
+                `    getApplicationContext(), "${eventName}", eventValues,`,
+                `    new AppsFlyerRequestListener() {`,
+                `        @Override`,
+                `        public void onSuccess() {`,
+                `            // YOUR CODE UPON SUCCESS`,
+                `        }`,
+                `        @Override`,
+                `        public void onError(int i, String s) {`,
+                `            // YOUR CODE FOR ERROR HANDLING`,
+                `        }`,
+                `    }`,
+                `);`,
+                ``,
+              ].join("\n");
+            } else {
+              return [
+                `// Event: ${eventName}`,
+                `Map<String, Object> eventValues = new HashMap<>();`,
+                ...paramLines,
+                `AppsFlyerLib.getInstance().logEvent(getApplicationContext(), "${eventName}", eventValues);`,
+                ``,
+              ].join("\n");
+            }
+          };
+
+          const javaCode = events
+            .map((event: any) => generateCode(event, args.hasListener!))
+            .join("\n");
+
+          return {
+            content: [
+              {
+                type: "text",
+                text: [
+                  `✅ Java code generated for ${events.length} event(s):`,
+                  "",
+                  "```java",
+                  javaCode,
+                  "```",
+                  "",
+                  "Imports you need:",
+                  "- import com.appsflyer.AppsFlyerLib;",
+                  "- import java.util.Map;",
+                  "- import java.util.HashMap;",
+                  args.hasListener ? "- import com.appsflyer.attribution.AppsFlyerRequestListener;" : "",
+                ]
+                  .filter(Boolean)
+                  .join("\n"),
+                _meta: {},
+              },
+            ],
+            _meta: {},
+          } as any;
         } catch (e: any) {
           return ask(`Invalid JSON: ${e.message}`) as any;
         }
-        if (Array.isArray(parsed)) parsed = { events: parsed };
-        if (!parsed.events || !Array.isArray(parsed.events)) {
-          return ask("JSON must contain an 'events' array.") as any;
-        }
-        const events = parsed.events;
-
-        const generateCode = (event: any) => {
-          const eventName =
-            event.eventIdentifier || event.eventName || "event_unknown";
-          const params = event.parameters || [];
-          const paramLines = params.map((p: any) => {
-            const key =
-              p.parameterIdentifier || p.parameterName || "param_unknown";
-            return `eventValues.put(\"${key}\", <<PLACEHOLDER_VALUE>>);`;
-          });
-          return [
-            `// Event: ${eventName}`,
-            `Map<String, Object> eventValues = new HashMap<>();`,
-            ...paramLines,
-            `AppsFlyerLib.getInstance().logEvent(getApplicationContext(), \"${eventName}\", eventValues);`,
-            "",
-          ].join("\n");
-        };
-
-        const javaCode = events.map(generateCode).join("\n");
-
-        return {
-          content: [
-            {
-              type: "text",
-              text: [
-                `✅ Java code generated for ${events.length} event(s):`,
-                "",
-                "```java",
-                javaCode,
-                "```",
-                "",
-                "Imports you need:",
-                "- import com.appsflyer.AppsFlyerLib;",
-                "- import java.util.Map;",
-                "- import java.util.HashMap;",
-              ].join("\n"),
-              _meta: {},
-            },
-          ],
-          _meta: {},
-        } as any;
       }
 
-      // MANUAL INPUT PATH
+      // === MANUAL INPUT FLOW ===
       if (args.useJsonInput === false) {
         const hasListener = args.hasListener;
         const eventName = args.eventName?.trim();
@@ -285,7 +353,7 @@ export function createAppsFlyerLogEvent(server: McpServer): void {
         }
 
         const paramLines = eventParams
-          .map((key) => `eventValues.put(\"${key}\", <<ENTER VALUE>>);`)
+          .map((key) => `eventValues.put("${key}", <<ENTER VALUE>>);`)
           .join("\n");
 
         const code = hasListener
@@ -340,3 +408,4 @@ AppsFlyerLib.getInstance().logEvent(
     }
   );
 }
+
