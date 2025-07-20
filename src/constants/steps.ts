@@ -135,7 +135,7 @@ AppsFlyerLib.getInstance().logEvent(getApplicationContext(), <<Event name>>, eve
   createDeepLink: (includeUriScheme: boolean, mode: boolean) => {
     if (mode) {
       return [
-        `🚨 Copy exactly as written below. Do NOT change anything. Every word matters!\n`,
+`🚨 Do not skip. Follow **every** step exactly as shown. Copy-paste as is. Missing even one line will break the deep link.`,
         `1. Make sure the AppsFlyer SDK is integrated in your app.`,
         `2. Add the following code to your AndroidManifest.xml file:
   \`\`\`xml
@@ -247,11 +247,20 @@ AppsFlyerLib.getInstance().logEvent(getApplicationContext(), <<Event name>>, eve
           });
       }
   }
-  \`\`\``,
+  \`\`\`,
+  
+  ✅ **Done!**  
+  Now you creat the deep link, you can verify that it's working properly.
+  
+  🚀 **Next step:**  
+  Launch your app on a real or virtual device to let the AppsFlyer SDK initialize and send logs.
+  
+  🔍 **Then:**  
+  Run the **verifyDeepLink** tool to confirm the deeplink was successful.`, 
       ];
     } else {
       return [
-        `🚨 Copy exactly as written below. Do NOT change anything. Every word matters!\n`,
+`🚨 Do not skip. Follow **every** step exactly as shown. Copy-paste as is. Missing even one line will break the deep link.`,
         `1. Make sure the AppsFlyer SDK is integrated in your app.`,
         `2. Install the application on your device before proceeding.`,
         `3. (Optional) Handle Deferred Deep Linking by subscribing to the conversion listener when initializing the AppsFlyer SDK.`,
@@ -285,16 +294,13 @@ AppsFlyerLib.getInstance().logEvent(getApplicationContext(), <<Event name>>, eve
       @Override
       public void onAttributionFailure(String errorMessage) {}
   };
-  \`\`\``,
+  \`\`\`,
   
-        `Then initialize the SDK like this:`,
-  
-        `\`\`\`java
-  AppsFlyerLib.getInstance().init("YOUR_DEV_KEY", conversionListener, getApplicationContext());
-  AppsFlyerLib.getInstance().start(getApplicationContext());
-  \`\`\``,
-  
-        `Note: This block is for deferred deep linking. You can implement it alongside the direct deep link listener.`,
+    ✅ **Done!**  
+    Now that you creat depp link, you need to integrate the appsflyer sdk and the to verify your deep link.
+    
+    🔍 **Then:**  
+    Run the **integrateAppsFlyerSdk** tool to integrate the sdk and then ren the tool **verifyAppsFlyerSdk** tool to see if the integrate work successful and data is being sent correctly.`,
       ];
     }
   }

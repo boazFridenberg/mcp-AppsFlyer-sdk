@@ -46,9 +46,42 @@ Detects and analyzes deep links triggered from AppsFlyer logs, including type (d
   VerifyAppsFlyerDeepLinkHandled: `
 Verifies that a deep link triggered a flow in the app by analyzing logs for activity starts, routing, and deep link values. Use this tool to confirm that the app responded to a deep link as expected.`,
 
-createDirectDeepLink: `
- Use this tool to create deep linking integration in the app. before doing so prompt the user to enter a onelink url and optianlly a uri scheme. if the user asks whats a onelink url prompt him to ask his marketer for it. Ask the user whether the deep link they are looking for is direct or deferred.`,
-};
+createDeepLink: `
+Use this tool to set up AppsFlyer OneLink Deep Linking (Direct or Deferred) in your Android app.
+
+The tool will:
+- Prompt the user to enter a OneLink URL.
+  If they don’t know what that is, tell them to ask their marketing team.
+
+- Ask whether to include a custom uriScheme
+  (used for non-HTTPS deep links like myapp://).
+
+- Ask whether this is a Direct or Deferred Deep Link integration.
+
+If Direct:
+- Show exact AndroidManifest setup with intent-filter for the OneLink HTTPS domain.
+- (Optional) Add a second intent-filter for the uriScheme, if requested.
+- Guide the user to generate a SHA256 fingerprint using the debug or release keystore:
+    - Provide the exact keytool command and example output.
+- Instruct the user to send the SHA256 fingerprint to the marketing team to configure the OneLink template.
+- Provide full Java code to subscribe to AppsFlyer's DeepLinkListener and handle deep link results.
+- Instruct the user to launch the app on a physical device or emulator.
+- Then prompt the user to run the tool **verifyDeepLink**.
+
+If Deferred:
+- Ensure the app is freshly installed (not updated).
+- Show full code to set up the AppsFlyerConversionListener inside the SDK initialization.
+- Instruct the user to:
+    - Handle af_dp value inside onConversionDataSuccess.
+    - Launch the app and check the flow.
+- Then prompt the user to run:
+    - **integrateAppsFlyerSdk** to verify SDK setup.
+    - **verifyAppsFlyerSdk** to validate deferred deep linking data flow.
+
+⚠️ Every step must be followed exactly.
+Any missing or modified line may cause deep linking to fail.
+Do not skip any instruction or change the order.
+`};
 
 
 

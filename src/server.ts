@@ -567,18 +567,18 @@ server.registerTool(
   }
 );
 server.registerTool(
-  "createDirectDeepLink",
+  "createDeepLink",
   {
-    title: "AppsFlyer OneLink Direct Deep Link Setup Prompt",
-    description: descriptions.createDirectDeepLink,
+    title: "AppsFlyer OneLink Deep Link Setup Prompt",
+    description: descriptions.createDeepLink,
     inputSchema: {
       oneLinkUrl: z.string().url(),
       uriScheme: z.string().optional(),
       isDirect: z.boolean().optional(),
     },
     annotations: {
-      intent: intents.AppsFlyerOneLinkDeepLinkSetupPrompt,
-      keywords: keywords.AppsFlyerOneLinkDeepLinkSetupPrompt,
+      intent: intents.createDeepLink,
+      keywords: keywords.createDeepLink,
     },
   },
   async (args) => {

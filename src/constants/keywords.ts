@@ -111,7 +111,7 @@ export const keywords = {
     "handled"
   ],
 
-  AppsFlyerOneLinkDeepLinkSetupPrompt: [
+  createDeepLink: [
     "deep linking",
     "deep link",
     "deeplink",
@@ -125,8 +125,6 @@ export const keywords = {
     "intent-filter",
     "deep link"
   ],
-
-  createDirectDeepLink: ['deep link', 'direct', 'onelink', 'uriScheme']
   };
   
   
