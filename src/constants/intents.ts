@@ -63,5 +63,43 @@ It also take the dev key from env in mcp.json — and only asks the user if not 
     "Provide AppsFlyer event JSON input via search, file path, or paste methods",
     "Generate AppsFlyer event code with or without response listener",
   ],
-  
+
+  DetectAppsFlyerDeepLink: `
+If the user asks to detect, analyze, or debug deep links (direct or deferred) from AppsFlyer logs, use this tool immediately. Do not attempt to analyze logs manually or explain deep link types yourself.`,
+
+  VerifyAppsFlyerDeepLinkHandled: `
+If the user wants to verify that a deep link triggered a flow in the app, use this tool to confirm the app responded to the deep link. Do not try to infer or simulate the flow manually.`,
+
+  createDeepLink:
+ `
+Guide the user through setting up AppsFlyer OneLink Deep Linking for Android.
+
+Prompt the user for:
+- Their OneLink URL (tell them to get it from marketing).
+- Whether they want to include a custom uriScheme.
+- Whether they are implementing Direct or Deferred Deep Linking.
+
+If Direct Deep Link:
+- Instruct the user to:
+  - Integrate the AppsFlyer SDK if not already done.
+  - Add an intent-filter for the OneLink domain in AndroidManifest.xml.
+  - Optionally add a second intent-filter for a custom uriScheme.
+  - Generate a SHA256 signature using the keystore (debug.keystore or production).
+  - Provide exact keytool command and example output.
+  - Send the SHA256 to the marketing team so they can configure the OneLink template.
+  - Import required libraries and subscribe to AppsFlyer DeepLinkListener with full Java code example.
+  - Launch the app to initialize the SDK.
+  - Run the tool **verifyDeepLink** to confirm correct behavior.
+
+If Deferred Deep Link:
+- Instruct the user to:
+  - Install the app on a device.
+  - Add an AppsFlyerConversionListener in the SDK initialization step.
+  - Handle af_dp value inside onConversionDataSuccess.
+  - Ensure SDK is integrated.
+  - Run the tools **integrateAppsFlyerSdk** and **verifyAppsFlyerSdk** to verify deep link tracking and data flow.
+
+⚠️ All steps must be followed exactly. Skipping or modifying even one line may break the deep link.
+`,
+
 };
