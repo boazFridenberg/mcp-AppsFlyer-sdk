@@ -315,7 +315,7 @@ AppsFlyerLib.getInstance().logEvent(getApplicationContext(),
       public void onCreate() {
           super.onCreate();
   
-          AppsFlyerLib.subscribeForDeepLink(new DeepLinkListener() {
+          AppsFlyerLib.getInstance().subscribeForDeepLink(new DeepLinkListener() {
               @Override
               public void onDeepLinking(@NonNull DeepLinkResult deepLinkResult) {
                   DeepLinkResult.Status dlStatus = deepLinkResult.getStatus();
@@ -378,7 +378,7 @@ AppsFlyerLib.getInstance().logEvent(getApplicationContext(),
       public void onCreate() {
           super.onCreate();
   
-          AppsFlyerLib.subscribeForDeepLink(new DeepLinkListener() {
+          AppsFlyerLib.getInstance().subscribeForDeepLink(new DeepLinkListener() {
               @Override
               public void onDeepLinking(@NonNull DeepLinkResult deepLinkResult) {
                   DeepLinkResult.Status dlStatus = deepLinkResult.getStatus();

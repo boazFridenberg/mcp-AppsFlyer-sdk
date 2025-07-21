@@ -31,7 +31,6 @@ export function createLogTool(
     },
     async ({ deviceId }) => {
       try {
-        let filtered;
         await startLogcatStream(APPSFLYER_PREFIX, deviceId);
 
         // Wait max 2 seconds for logs to populate
@@ -43,7 +42,7 @@ export function createLogTool(
 
         const logs = getParsedAppsflyerFilters(keyword);
 
-        if (keyword === "CONVERSION-" || keyword === "LAUNCH-" || keyword === '{"deepLink":') {
+        if (keyword === "CONVERSION-" || keyword === "LAUNCH-") {
           if (!logs.length) {
             return {
               content: [
@@ -54,9 +53,8 @@ export function createLogTool(
               ],
             };
           }
-          const latestLog = logs[logs.length - 1];
 
-          if (keyword === "CONVERSION-" || keyword === "LAUNCH-"){
+          const latestLog = logs[logs.length - 1];
           const desiredKeys = [
             "af_timestamp",
             "uid",
@@ -67,15 +65,11 @@ export function createLogTool(
             "onelink_id",
           ];
 
-           filtered = Object.fromEntries(
+          const filtered = Object.fromEntries(
             desiredKeys
               .filter((key) => key in latestLog.json)
               .map((key) => [key, latestLog.json[key]])
           );
-        }
-        else{
-          filtered = latestLog;
-        }
           return {
             content: [
               {
