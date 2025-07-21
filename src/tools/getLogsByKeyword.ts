@@ -15,5 +15,5 @@ export function getLaunchLogs(server: McpServer): void {
 }
 
 export function getDeepLinkLogs(server: McpServer): void {
-  createLogTool(server, "getDeepLinkLogs", "deepLink");
+  createLogTool(server, "getDeepLinkLogs", '{"deepLink":');
 }
