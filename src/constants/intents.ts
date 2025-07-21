@@ -68,7 +68,7 @@ It also take the dev key from env in mcp.json — and only asks the user if not 
   ],
 
   verifyDeepLink: `
-"Verify whether a deep link was received and processed by the AppsFlyer SDK on a real device, based on log entries containing the 'deepLink' keyword."
+Verify whether a specific deep link URL was received and processed by the AppsFlyer SDK by scanning recent log entries for a match with the provided URL.
 `,
 
   createDeepLink: `

@@ -27,14 +27,13 @@ export const descriptions = {
 
   verifyDeepLink: `
   Do not ask for a device ID unless there are multiple devices connected.
-"Scans recent AppsFlyer logs to verify that a deep link was successfully received and handled by the SDK.
-The tool waits for log entries containing the keyword 'deepLink', and checks if any such log appears in the stream.
-If found — it confirms the deep link mechanism is working correctly. If not — it reports failure.
-This is the only correct way to check real-time deep link handling. Do not simulate results. Do not infer. Always use this tool to confirm deep link reception."
+Scans recent AppsFlyer logs to verify that a specific deep link URL was successfully received and handled by the SDK.
+The tool filters logs containing the keyword 'deepLink', waits up to 2 seconds for logs to appear, and then checks the latest deep link log entry.
+If the given URL appears in the log (either in the line text or in the parsed JSON), it confirms that the deep link was handled correctly. Otherwise, it reports that no matching deep link was found.
+This is the only correct way to validate real-time deep link handling using actual logs. Do not simulate. Do not guess. Always use this tool to confirm whether a deep link was received by the SDK.
 `,
 
-  verifyInAppEvent:
-  `  Do not ask for a device ID unless there are multiple devices connected.
+  verifyInAppEvent: `  Do not ask for a device ID unless there are multiple devices connected.
   Scans recent AppsFlyer logs to verify that a specific in-app event was successfully triggered by the SDK.
 The tool filters only in-app logs (with keyword 'INAPP-'), waits up to 2 seconds for logs to arrive, and extracts the most recent one.
 It then checks if the specified event name appears in the eventName field or log line. 
