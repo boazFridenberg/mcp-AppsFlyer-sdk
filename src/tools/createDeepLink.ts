@@ -5,7 +5,7 @@ import { intents } from "../constants/intents.js";
 import { keywords } from "../constants/keywords.js";
 import { steps } from "../constants/steps.js";
 
-export function verifyDeepLink(server: McpServer) {
+export function createDeepLink(server: McpServer) {
   server.registerTool(
     "createDeepLink",
   {
