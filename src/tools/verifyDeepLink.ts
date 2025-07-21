@@ -9,7 +9,7 @@ import { keywords } from "../constants/keywords.js";
 const APPSFLYER_PREFIX = "AppsFlyer_";
 const DEEPLINK_KEYWORD = "deepLink";
 
-export function registerVerifyDeepLink(server: McpServer) {
+export function verifyDeepLink(server: McpServer) {
   server.registerTool(
     "verifyDeepLink",
     {
