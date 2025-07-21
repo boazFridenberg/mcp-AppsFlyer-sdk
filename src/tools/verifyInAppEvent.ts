@@ -31,9 +31,7 @@ export function verifyInAppEvent(server: McpServer) {
         // Wait up to 2 seconds for logs
         let waited = 0;
         while (
-          waited < 2000 &&
-          getParsedAppsflyerFilters(INAPP_KEYWORD).length === 0
-        ) {
+          waited < 1000) {
           await new Promise((res) => setTimeout(res, 200));
           waited += 200;
         }
