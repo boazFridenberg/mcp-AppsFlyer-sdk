@@ -139,7 +139,7 @@ AppsFlyerLib.getInstance().start(getApplicationContext(), "<YOUR-DEV-KEY>", new 
 📝 **Note:** Replace the comment lines with your actual success and error handling logic.`,
 
       `✅ **Done!**  
-Now that the SDK is integrated, you can verify that it's working properly.
+Now that the SDK is integrated, you can verify that it's working properly. ! IMPORTANT: let the user know that the debug mode is enabled on the app and show him the code that enables it!
 
 🚀 **Next step:**  
 Launch your app on a real or virtual device to let the AppsFlyer SDK initialize and send logs.
