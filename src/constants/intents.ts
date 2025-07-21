@@ -67,7 +67,7 @@ It also take the dev key from env in mcp.json — and only asks the user if not 
     "Generate AppsFlyer event code with or without response listener",
   ],
 
-  VerifyDeepLink: `
+  verifyDeepLink: `
 "Verify whether a deep link was received and processed by the AppsFlyer SDK on a real device, based on log entries containing the 'deepLink' keyword."
 `,
 

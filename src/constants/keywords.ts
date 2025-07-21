@@ -97,7 +97,7 @@ export const keywords = {
     "af_dp"
   ],
 
-  VerifyAppsFlyerDeepLink: [
+  verifyDeepLink: [
     "deeplink",
     "verify",
     "appsFlyer",
