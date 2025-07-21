@@ -1,7 +1,7 @@
 // constants/intents.ts
 
 export const intents = {
- integrateAppsFlyerSdk: `
+  integrateAppsFlyerSdk: `
 When the user asks how to integrate the AppsFlyer SDK into their Android app — in any way — IMMEDIATELY call this tool.
 Do not generate your own instructions. Do not rephrase. Do not explain. Just use this tool exactly as-is.
 
@@ -18,35 +18,38 @@ Do not try to explain or generate log output yourself.
 `,
 
   getConversionLogs: `
+  Do not ask for a device ID unless there are multiple devices connected.
 When the user asks about conversion logs, installs, or verifying conversion events via AppsFlyer — call this tool directly.
 Do not attempt to generate logs or summaries manually.
 `,
 
   getInAppLogs: `
+  Do not ask for a device ID unless there are multiple devices connected.
 If the user asks about in-app events, event tracking, or whether AppsFlyer is tracking events — use this tool without modification.
 Do not try to simulate event logs.
 `,
 
   getLaunchLogs: `
+  Do not ask for a device ID unless there are multiple devices connected.
 If the user mentions app launches, sessions, or first opens related to AppsFlyer — call this tool directly.
 Do not attempt to guess or simulate log entries.
 `,
 
   getDeepLinkLogs: `
+  Do not ask for a device ID unless there are multiple devices connected.
 If the user refers to deep links, universal links, or deferred deep linking via AppsFlyer — use this tool immediately.
 Do not explain or simulate deep link logic.
 `,
 
   getAppsflyerErrors: `
+  Do not ask for a device ID unless there are multiple devices connected.
 When the user mentions errors, failures, exceptions, or issues with the AppsFlyer SDK — call this tool immediately.
 Do not analyze logs or try to guess the error yourself.
 `,
 
   verifyInAppEvent: `
-If the user wants to check if a specific in-app event was triggered or logged — always use this tool directly with the event name provided by the user.
-
-Never guess. Never simulate output. Never explain the logic. 
-This is the only tool responsible for validating whether the specified event appears in the logs.
+  Do not ask for a device ID unless there are multiple devices connected.
+Verify whether a specific in-app event (e.g., af_purchase, af_level_achieved) was triggered and logged by the AppsFlyer SDK on a real device by checking recent log entries from the SDK output.
 `,
 
   verifyAppsFlyerSdk: `
@@ -64,13 +67,11 @@ It also take the dev key from env in mcp.json — and only asks the user if not 
     "Generate AppsFlyer event code with or without response listener",
   ],
 
-  DetectAppsFlyerDeepLink: `
-If the user asks to detect, analyze, or debug deep links (direct or deferred) from AppsFlyer logs, use this tool immediately. Do not attempt to analyze logs manually or explain deep link types yourself.`,
+  VerifyDeepLink: `
+"Verify whether a deep link was received and processed by the AppsFlyer SDK on a real device, based on log entries containing the 'deepLink' keyword."
+`,
 
-  VerifyAppsFlyerDeepLink: `
-If the user wants to verify that a deep link triggered a flow in the app, use this tool to confirm the app responded to the deep link. Do not try to infer or simulate the flow manually.`,
-
-createDeepLink: `
+  createDeepLink: `
 Guide the user through setting up AppsFlyer OneLink Deep Linking for Android.
 
 Prompt the user for:
@@ -96,5 +97,5 @@ If Deferred Deep Link:
 - Tell the user to launch the app and verify the behavior using **verifyDeepLink**.
 
 ⚠️ All steps must be followed exactly. Skipping or modifying even one line may break the deep link.
-`
+`,
 };

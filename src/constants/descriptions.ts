@@ -1,6 +1,6 @@
 export const descriptions = {
- integrateAppsFlyerSdk:
-  "Full AppsFlyer Android SDK integration instructions and code. DO NOT summarize, explain, or rewrite. Always return the exact steps and code blocks as provided. You MUST ask the user whether they need to use a response listener before selecting the steps variant.",
+  integrateAppsFlyerSdk:
+    "Full AppsFlyer Android SDK integration instructions and code. DO NOT summarize, explain, or rewrite. Always return the exact steps and code blocks as provided. You MUST ask the user whether they need to use a response listener before selecting the steps variant.",
 
   fetchAppsflyerLogs:
     "Fetches recent logcat logs related to AppsFlyer. Use this to locate appId and uid (device ID) if they're not known. Use this tool for any request to get, show, or fetch AppsFlyer logs, logcat output, or raw logs.",
@@ -25,27 +25,23 @@ export const descriptions = {
 
   createAppsFlyerLogEvent: `Generate Java code to log AppsFlyer in-app events. You will first be asked whether you want to use JSON input (via file search, paste, or file path), or to manually specify the event name and parameters. Then, you will be guided step-by-step.`,
 
-  verifyInAppEvent: `
-Scans recent AppsFlyer logs to determine whether a specific in-app event (provided by the user via eventName parameter) was successfully triggered.
-
-It verifies:
-- That a log line contains the exact event name provided by the user.
-- That the event value is present, structured correctly, and contains meaningful parameters.
-- That a matching network call was made to the correct AppsFlyer endpoint (androidevent?app_id=...)
-
-This tool parses actual log lines as JSON and checks them structurally — not just by text includes. It ensures that the event was actually fired by the app, and that the SDK triggered the expected behavior.
-
-This tool is the only correct way to validate if an in-app event was fired and logged properly.
-Do not simulate results. Do not explain. Always call this tool when asked to test, verify, or confirm any in-app event by name.
+  verifyDeepLink: `
+  Do not ask for a device ID unless there are multiple devices connected.
+"Scans recent AppsFlyer logs to verify that a deep link was successfully received and handled by the SDK.
+The tool waits for log entries containing the keyword 'deepLink', and checks if any such log appears in the stream.
+If found — it confirms the deep link mechanism is working correctly. If not — it reports failure.
+This is the only correct way to check real-time deep link handling. Do not simulate results. Do not infer. Always use this tool to confirm deep link reception."
 `,
 
-  DetectAppsFlyerDeepLink: `
-Detects and analyzes deep links triggered from AppsFlyer logs, including type (direct/deferred), values, and errors. Use this tool to determine if a deep link was received and what kind of deep link it was.`,
+  verifyInAppEvent:
+  `  Do not ask for a device ID unless there are multiple devices connected.
+  Scans recent AppsFlyer logs to verify that a specific in-app event was successfully triggered by the SDK.
+The tool filters only in-app logs (with keyword 'INAPP-'), waits up to 2 seconds for logs to arrive, and extracts the most recent one.
+It then checks if the specified event name appears in the eventName field or log line. 
+If found — it confirms the event was sent. If not — it reports failure.
+This is the only correct method to validate in-app events based on real logs. Do not simulate. Do not infer. Always use this tool to confirm whether an event actually fired.`,
 
-  VerifyAppsFlyerDeepLink: `
-Verifies that a deep link triggered a flow in the app by analyzing logs for activity starts, routing, and deep link values. Use this tool to confirm that the app responded to a deep link as expected.`,
-
-createDeepLink: `
+  createDeepLink: `
 Use this tool to set up AppsFlyer OneLink Deep Linking (Direct or Deferred) in your Android app.
 
 The tool will:
@@ -75,7 +71,7 @@ If Deferred:
 ⚠️ Every step must be followed exactly.
 Any missing or modified line may cause deep linking to fail.
 Do not skip or change the instructions.
-`
+`,
 };
 
 
