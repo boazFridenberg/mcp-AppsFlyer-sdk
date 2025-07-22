@@ -4,8 +4,6 @@ import { startLogcatStream, logBuffer } from "../logcat/stream.js";
 import { extractJsonFromLine } from "../logcat/parse.js";
 import { getParsedAppsflyerFilters } from "../logcat/parse.js";
 import { descriptions } from "../constants/descriptions.js";
-import { intents } from "../constants/intents.js";
-import { keywords } from "../constants/keywords.js";
 
 export function verifyAppsFlyerSdk(server: McpServer): void {
   server.registerTool(
@@ -15,10 +13,6 @@ export function verifyAppsFlyerSdk(server: McpServer): void {
       description: descriptions.verifyAppsFlyerSdk,
       inputSchema: {
         deviceId: z.string().optional(),
-      },
-      annotations: {
-        intent: intents.verifyAppsFlyerSdk,
-        keywords: keywords.verifyAppsFlyerSdk,
       },
     },
     async ({ deviceId }) => {

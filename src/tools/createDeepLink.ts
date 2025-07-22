@@ -1,8 +1,6 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { descriptions } from "../constants/descriptions.js";
-import { intents } from "../constants/intents.js";
-import { keywords } from "../constants/keywords.js";
 import { steps } from "../constants/steps.js";
 
 export function createDeepLink(server: McpServer) {
@@ -15,10 +13,6 @@ export function createDeepLink(server: McpServer) {
       oneLinkUrl: z.string().url(),
       uriScheme: z.string().optional(),
       isDirect: z.boolean().optional(),
-    },
-    annotations: {
-      intent: intents.createDeepLink,
-      keywords: keywords.createDeepLink,
     },
   },
   async (args) => {

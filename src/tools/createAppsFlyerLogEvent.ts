@@ -4,8 +4,6 @@ import * as fs from "fs";
 import path from "path";
 import { glob } from "glob";
 import { descriptions } from "../constants/descriptions.js";
-import { intents } from "../constants/intents.js";
-import { keywords } from "../constants/keywords.js";
 
 export function createAppsFlyerLogEvent(server: McpServer): void {
   server.registerTool(
@@ -32,10 +30,6 @@ export function createAppsFlyerLogEvent(server: McpServer): void {
         eventParams: z.array(z.string()).optional().describe(
           "List of parameter names to send with the event (values will be added manually later)"
         ),
-      },
-      annotations: {
-        intent: intents.createAppsFlyerLogEvent,
-        keywords: keywords.createAppsFlyerLogEvent,
       },
     },
     async (args, _extra) => {
