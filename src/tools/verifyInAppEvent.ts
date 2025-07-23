@@ -3,8 +3,6 @@ import { z } from "zod";
 import { startLogcatStream } from "../logcat/stream.js";
 import { getParsedAppsflyerFilters } from "../logcat/parse.js";
 import { descriptions } from "../constants/descriptions.js";
-import { intents } from "../constants/intents.js";
-import { keywords } from "../constants/keywords.js";
 
 const APPSFLYER_PREFIX = "AppsFlyer_";
 const INAPP_KEYWORD = "INAPP-";
@@ -18,10 +16,6 @@ export function verifyInAppEvent(server: McpServer) {
       inputSchema: {
         eventName: z.string(),
         deviceId: z.string().optional(),
-      },
-      annotations: {
-        intent: intents.verifyInAppEvent,
-        keywords: keywords.verifyInAppEvent,
       },
     },
     async ({ eventName, deviceId }) => {

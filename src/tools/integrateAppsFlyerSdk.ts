@@ -1,7 +1,5 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { descriptions } from "../constants/descriptions.js";
-import { intents } from "../constants/intents.js";
-import { keywords } from "../constants/keywords.js";
 import { steps } from "../constants/steps.js";
 import { z } from "zod";
 
@@ -11,10 +9,6 @@ export function integrateAppsFlyerSdk(server: McpServer): void {
     {
       title: "Integrate AppsFlyer SDK",
       description: descriptions.integrateAppsFlyerSdk,
-      annotations: {
-        intent: intents.integrateAppsFlyerSdk,
-        keywords: keywords.integrateAppsFlyerSdk,
-      },
       inputSchema: {
         useResponseListener: z
           .boolean()

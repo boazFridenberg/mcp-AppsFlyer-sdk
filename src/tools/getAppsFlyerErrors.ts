@@ -3,8 +3,6 @@ import { z } from "zod";
 import { startLogcatStream } from "../logcat/stream.js";
 import { getParsedAppsflyerFilters } from "../logcat/parse.js";
 import { descriptions } from "../constants/descriptions.js";
-import { intents } from "../constants/intents.js";
-import { keywords } from "../constants/keywords.js";
 
 export function getAppsflyerErrors(server: McpServer): void {
   server.registerTool(
@@ -14,10 +12,6 @@ export function getAppsflyerErrors(server: McpServer): void {
       description: descriptions.getAppsflyerErrors,
       inputSchema: {
         deviceId: z.string().optional(),
-      },
-      annotations: {
-        intent: intents.getAppsflyerErrors,
-        keywords: keywords.getAppsflyerErrors,
       },
     },
     async ({ deviceId }) => {
@@ -32,7 +26,13 @@ export function getAppsflyerErrors(server: McpServer): void {
           waited += 200;
         }
 
-        const errorKeywords = keywords.getAppsflyerErrors;
+        const errorKeywords = [
+          "FAILURE",
+          "ERROR",
+          "Exception",
+          "No deep link"
+        ];
+      
         const errors = errorKeywords.flatMap((keyword) =>
           getParsedAppsflyerFilters(keyword)
         );

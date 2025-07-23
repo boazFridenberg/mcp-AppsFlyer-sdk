@@ -3,8 +3,6 @@ import { z } from "zod";
 import { startLogcatStream } from "../logcat/stream.js";
 import { getParsedAppsflyerFilters } from "../logcat/parse.js";
 import { descriptions } from "../constants/descriptions.js";
-import { intents } from "../constants/intents.js";
-import { keywords } from "../constants/keywords.js";
 
 const APPSFLYER_PREFIX = "AppsFlyer_";
 
@@ -23,10 +21,6 @@ export function createLogTool(
       description: descriptions[toolName],
       inputSchema: {
         deviceId: z.string().optional(),
-      },
-      annotations: {
-        intent: intents[toolName],
-        keywords: keywords[toolName],
       },
     },
     async ({ deviceId }) => {

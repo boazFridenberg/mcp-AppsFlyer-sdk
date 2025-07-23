@@ -2,8 +2,6 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { startLogcatStream, logBuffer } from "../logcat/stream.js";
 import { descriptions } from "../constants/descriptions.js";
-import { intents } from "../constants/intents.js";
-import { keywords } from "../constants/keywords.js";
 
 export function fetchAppsflyerLogs(server: McpServer): void {
   server.registerTool(
@@ -13,10 +11,6 @@ export function fetchAppsflyerLogs(server: McpServer): void {
       description: descriptions.fetchAppsflyerLogs,
       inputSchema: {
         deviceId: z.string().optional(),
-      },
-      annotations: {
-        intent: intents.fetchAppsflyerLogs,
-        keywords: keywords.fetchAppsflyerLogs,
       },
     },
     async ({ deviceId }) => {
